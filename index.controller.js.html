@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: index.controller.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: index.controller.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const { Pool } = require("pg");
+const con = require("./connectionString.js");
+const fetch = require("cross-fetch");
+const xml2js = require("xml2js");
+const crypto = require("crypto");
+const soap = require("soap");
+
+console.log("fetch=" + fetch);
+console.log(crypto);
+
+const pool = new Pool({
+  user: con.username,
+  password: con.password,
+  host: con.host,
+  database: con.database,
+  port: con.port,
+});
+
+const getEquipamientos = async (req, res) => {
+  const response = await pool.query("SELECT * FROM zona_residencial_1");
+  console.log(response.rows);
+  res.send(response.rows);
+};
+
+const getSelect = async (req, res) => {
+  try {
+    const select = req.query.select;
+    const response = await pool.query(select);
+    res.send(response.rows);
+  } catch (error) {
+    console.error("Error en servicio postgis_select:", err);
+    res.status(500).send("Error en el servidor");
+  }
+};
+
+const getIntersection = async (req, res) => {
+  try {
+    var tablaSOURCE = req.query.tablaSOURCE;
+    var tablaTARGET = req.query.tablaTARGET;
+    var filtroSOURCE = req.query.filtroSOURCE;
+    var filtroTARGET = req.query.filtroTARGET;
+
+    console.log(tablaSOURCE);
+    console.log(tablaTARGET);
+    console.log(filtroSOURCE);
+    console.log(filtroTARGET);
+
+    var intersection_query =
+      `SELECT row_to_json(fc) FROM 
+    ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features 
+      FROM (SELECT 'Feature' As type , ST_AsGeoJSON(ST_Transform(lp.geometria,4326))::json As geometry , row_to_json(lp) As properties FROM ` +
+      tablaSOURCE +
+      ` As lg INNER JOIN 
+         (select ` +
+      tablaSOURCE +
+      `.*,ST_INTERSECTION(` +
+      tablaSOURCE +
+      `.the_geom,` +
+      tablaTARGET +
+      `.the_geom) AS geometria from ` +
+      tablaSOURCE +
+      `,` +
+      tablaTARGET +
+      ` 
+        where ST_INTERSECTS(` +
+      tablaSOURCE +
+      `.the_geom, ` +
+      tablaTARGET +
+      `.the_geom) and ` +
+      tablaTARGET +
+      `.` +
+      filtroTARGET +
+      ` and ` +
+      tablaSOURCE +
+      `.` +
+      filtroSOURCE +
+      `) As lp ON lg.fid = lp.fid ) As f ) As fc`;
+
+    // Ejecuta la consulta utilizando el pool
+
+    const { rows } = await pool.query(intersection_query);
+
+    // Envía la respuesta al cliente
+    res.send(rows[0].row_to_json);
+  } catch (err) {
+    console.error("Error en servicio featureByPoint:", err);
+    res.status(500).send("Error en el servidor");
+  }
+};
+
+/**
+ * Obtiene un objeto GeoJSON a partir de una tabla.
+ * @param {Object} req - El objeto de solicitud.
+ * @param {string} req.query.table - El nombre de la tabla.
+ * @param {string} [req.query.filter] - El filtro para la consulta SQL (opcional).
+ * @param {string} [req.query.fields] - Los campos a seleccionar en la tabla (opcional).
+ * @param {string} [req.query.crs] - El sistema de referencia de coordenadas (opcional).
+ * @param {Object} res - El objeto de respuesta.
+ * @returns {Promise} Una promesa que resuelve con el objeto GeoJSON.
+ * @throws {Error} Si hay un error en el servicio.
+ */
+const getGeojson = async (req, res) => {
+  // Recupera los parámetros de la solicitud HTTP
+  table = req.query.table;
+  filter = req.query.filter;
+  fields = req.query.fields;
+  crs = req.query.crs;
+
+  // Lógica para construir la consulta SQL
+  if (filter != null) filter = " where " + filter;
+  else filter = "";
+
+  if (fields == null) fields = "*";
+  else {
+    fields_array = fields.split(",");
+
+    if (!fields_array.includes("fid")) fields = "fid," + fields;
+  }
+
+  if (crs == null) crs = "4326";
+
+  var s_query =
+    "SELECT row_to_json(fc) FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type , ST_AsGeoJSON(ST_Transform(lg.the_geom," +
+    crs +
+    "))::json As geometry , row_to_json(lp) As properties FROM " +
+    table +
+    "  As lg INNER JOIN (SELECT " +
+    fields +
+    " FROM " +
+    table +
+    filter +
+    " ) As lp ON lg.fid = lp.fid ) As f ) As fc";
+
+  // Ejecuta la consulta utilizando el pool de conexiones a la base de datos
+  const { rows } = await pool.query(s_query);
+
+ // Envía la respuesta al cliente en formato GeoJSON
+  res.send(rows[0].row_to_json);
+};
+
+const getFeatureByPoint = async (req, res) => {
+  try {
+    var tabla = req.query.tabla;
+    var x = req.query.x;
+    var y = req.query.y;
+
+    var queryXY =
+      "SELECT row_to_json(fc) FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type , ST_AsGeoJSON(ST_Transform(lg.the_geom,4326))::json As geometry , row_to_json(lp) As properties FROM " +
+      tabla +
+      " As lg INNER JOIN (SELECT * FROM " +
+      tabla +
+      " where ST_CONTAINS(the_geom,ST_GeomFromText('POINT(" +
+      x +
+      " " +
+      y +
+      ")',25831))) As lp ON lg.fid = lp.fid ) As f ) As fc";
+
+    // Ejecuta la consulta utilizando el pool
+    const { rows } = await pool.query(queryXY);
+
+    // Envía la respuesta al cliente
+    res.send(rows[0].row_to_json);
+  } catch (err) {
+    console.error("Error en servicio featureByPoint:", err);
+    res.status(500).send("Error en el servidor");
+  }
+};
+
+// Cierra el pool cuando la aplicación se detiene
+process.on("SIGINT", () => {
+  pool.end().then(() => {
+    console.log("Conexiones al pool cerradas.");
+    process.exit(0);
+  });
+});
+
+module.exports = {
+  getEquipamientos,
+  getFeatureByPoint,
+  getGeojson,
+  getIntersection,
+  getSelect,
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#getGeojson">getGeojson</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a> on Fri Nov 24 2023 10:57:37 GMT+0100 (hora estándar de Europa central)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

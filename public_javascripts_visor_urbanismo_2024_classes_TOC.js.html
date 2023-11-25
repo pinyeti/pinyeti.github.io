@@ -1,0 +1,1678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: public/javascripts/visor_urbanismo_2024/classes/TOC.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: public/javascripts/visor_urbanismo_2024/classes/TOC.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Clase para gestionar la tabla de contenidos (TOC) en un mapa.
+ * @class
+ */
+class TOC {
+  /**
+   * Constructor de la clase TOC.
+   * @constructor
+   * @param {Object} mapLayers - Capas del mapa.
+   * @param {Object} mapBaseActual - Capa base actual del mapa.
+   * @param {Object} map - Instancia del mapa.
+   */
+  constructor(mapLayers, mapBaseActual, map) {
+    this.mapBaseActual = mapBaseActual;
+    this.map = map;
+    this.mapLayers = mapLayers;
+    this.dataOrdenacion = [];
+    this.htmSliderOrdenacion = ``;
+    this.htmSliderBaseMap = ``;
+    this.htmSliderConsultas = ``;
+    this.htmColorConsultas = ``;
+    this.htmStyleOrdenacion = ``;
+    this.htmStyleBaseMap = ``;
+    this.htmStyleConsultas = ``;
+    this.htmTreeOrdenacion = ``;
+    this.htmTreeConsultas = ``;
+    this.htmlTabsBase = ``;
+    this.htmAccordion = ``;
+
+    this.createControls();
+    this.createTreeOrdenacion();
+    this.createSliderOrdenacion();
+    this.createBaseMap();
+    this.createSliderBaseMap();
+    this.createTreeConsultas();
+    this.createSliderConsultas();
+    this.createControlPickerConsultas();
+    this.createStyleConsultas();
+
+    this._createAcoordion();
+  }
+
+  /**
+   * Obtiene el HTML de la tabla de contenidos.
+   * @returns {string} - HTML generado para la tabla de contenidos.
+   */
+  getHTM_TOC() {
+    return this.htmAccordion;
+  }
+
+  /**
+   * Crea y configura un acordion para mostrar diferentes secciones de contenido.&lt;br>
+   * &lt;strong>Private method&lt;/strong>
+   * @returns {void}
+   */
+  _createAcoordion() {
+    this.htmAccordion = `&lt;div  id="accordion">		 
+				&lt;h3>MAPAS BASE&lt;/h3>
+					&lt;div style='padding:0px'>
+            ${this.htmStyleBaseMap}
+					  ${this.htmlTabsBase} 		
+					&lt;/div>
+				&lt;h3>ORDENACIÓN&lt;/h3>
+					&lt;div style='overflow: hidden;padding:0px'>
+            ${this.htmStyleOrdenacion}
+            ${this.htmTreeOrdenacion}
+					&lt;/div>
+        &lt;h3>CONSULTAS&lt;/h3>
+          &lt;div style='overflow: hidden;padding:0px'>
+            &lt;input style='font-size:7pt;height:20' class="ui-button ui-widget ui-corner-all" type="button" name="addLayersNormativa" value="BORRAR SELECCIONADOS" id="deleteSelectedConsultas" &lt;/input> 
+            &lt;button style="padding-top:0px;padding-bottom:1px;" class="ui-button ui-widget ui-corner-all" title="Descarga en formato geojson"  id="download_select_consultas">&lt;i class="fa fa-download">&lt;/i>&lt;/button>
+            &lt;!-- &lt;button style="font-size:8pt;padding-top:3px;padding-bottom:3px;" class="ui-button ui-widget ui-corner-all" title="Esborrar seleccionats" OnClick="deleteSelectedConsultas_vig()', 'text/plain')">&lt;img src="/images/icons_vsgis/delete16.png"> Esborrar &lt;/button> -->
+            ${this.htmlStyleConsultas}
+            
+            ${this.htmTreeConsultas}
+          &lt;/div>
+		&lt;/div>`;
+
+    if (!this._isMobile()) {
+      L.control
+        .slideMenu(this.htmAccordion, {
+          position: "topright",
+          menuposition: "topright",
+          width: "350px",
+          height: "571px",
+          //icon: "menu-icon",
+        })
+        .addTo(map);
+    } else {
+      L.control
+        .slideMenu(this.htmAccordion, {
+          position: "topright",
+          menuposition: "topright",
+          width: "295px",
+          height: "571px",
+          //icon: "menu-icon",
+        })
+        .addTo(map);
+    }
+
+    const self = this;
+    document
+      .getElementById("download_select_consultas")
+      .addEventListener("click", function () {
+        self.downloadSelectedConsultas();
+      });
+    document
+      .getElementById("deleteSelectedConsultas")
+      .addEventListener("click", function () {
+        self.deleteSelectedConsultas();
+      });
+  }
+
+  /**
+   * Verifica si el dispositivo actual se encuentra en un viewport móvil&lt;br>
+   * &lt;strong>Private method&lt;/strong>
+   * @returns {boolean} Devuelve `true` si el ancho del viewport es como máximo 767 píxeles, lo que indica un dispositivo móvil.
+   */
+  _isMobile() {
+    return window.matchMedia("(max-width: 767px)").matches;
+  }
+
+  /**
+   * Crea y devuelve un conjunto de datos representando categorías de suelo PG2023.&lt;br>
+   * &lt;strong>Private method&lt;/strong>
+   * @returns {Object[]} Array de objetos representando categorías de suelo.
+   */
+  _createDataCategoriasSuelo2023() {
+    const data = [
+      {
+        id: "1_1",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(AANP) Àrees naturals d`especial interès d`alt nivell de protecció&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_AANP.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "1_2",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(ANEI) Àrees naturals d`especial interès&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_ANEI.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "1_3",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(AIN-PG) Àrees d`interes natural per planejament general&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_AIN.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "1_4",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(ZIP) Zones de Interés pasajistic protegides per planejament general&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_ZIP.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "1_5",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(ARIP) Àrees rurals d`interès paisatgistic&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_ARIP.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "1_6",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(SRG) Àrees de sòl rústic de regim general&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_SRG.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "1_7",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(AIA) Àrees de interes agrari&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_AIA.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "1_8",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(AT-H) Àrees de transició, d´harmonització &lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_AT-H.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "1_9",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(NR) Nucli rural&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_NR.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+    ];
+
+    return data;
+  }
+
+  /**
+   * Crea y devuelve un conjunto de datos representando ámbitos PGOU98.&lt;br>
+   * &lt;strong>Private method&lt;/strong>
+   * @returns {Object[]} Array de objetos representando ámbitos PGOU98.
+   */
+  _createDataAmbitosPGOU98() {
+    const data = [
+      {
+        id: "3_1_1",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(UE) Unidad de ejecución&lt;/i>&lt;/Label>',
+        icon: "images/legends/UE_PGV.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "3_1_2",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(API) Area Planeamiento Incorporado&lt;/i>&lt;/Label>',
+        icon: "images/legends/API_PGV.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "3_1_3",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(ARE) Area de régimen especial en SU&lt;/i>&lt;/Label>',
+        icon: "images/legends/ARE_PGV.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+    ];
+    return data;
+  }
+
+  /**
+   * Crea y devuelve un conjunto de datos representando sistemas PGOU98.&lt;br>
+   * &lt;strong>Private method&lt;/strong>
+   * @returns {Object[]} Array de objetos representando sistemas PGOU98.
+   */
+  _createDataSistemasDotacionalesPGOU98() {
+    const data = [
+      {
+        id: "2_1_18_1",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(SLEC) Equipament Comunitari (S.Local)&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_SLEC.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_1_18_2",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(SLEL) Espai Lliure (S.Local)&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_SLEL.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_1_18_3",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(SLC) Comunicaciones e infraestructuras (S.Local)&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_SGC.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_1_18_4",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(SGEC) Equipament Comunitari (S.General)&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_SGEC.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_1_18_5",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(SGEL) Espai Lliure (S.General)&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_SGEL.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_1_18_6",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(SGCI) Comunicaciones e infraestructiuas (S.General)&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_SGC.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+    ];
+    return data;
+  }
+
+  /**
+   * Crea y devuelve un conjunto de datos representando calificaciones PGOU98.&lt;br>
+   * &lt;strong>Private method&lt;/strong>
+   * @returns {Object[]} Array de objetos representando calificaciones PGOU98.
+   */
+  _createDataCalificacionesPGO98() {
+    const data = [
+      {
+        id: "2_1_1",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(A) Residencial Plurifamiliar Eixample. AV-MC.V.&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_A.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_1_2",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(B) Residencial Plurifamiliar Eixample Perifèric. AV-MC.V.&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_B.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_1_3",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(C) Residencial Plurifamiliar Eixos Cívics. AV-MC.V.&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_C.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_1_4",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(D) Residencial Plurifamiliar en illa tancada reculada. AV-MC.R.&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_D.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_1_5",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(E) Residencial Plurifamiliar Ordenació Oberta. RP.A.&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_E.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_1_6",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(F) Ordenació volumètrica específica (residencial plurifamiliar o terciari. VE)&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_F.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_1_7",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(G) Residencial Plurifamiliar amb tipologies mixtes. RP. S.&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_G.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_1_8",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(H) Residencial Plurifamiliar MC reculada amb porxos. AV-MC.R.&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_H.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_1_9",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(I) Residencial Unifamiliar aïllada de baixa densitat. RP.A.&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_I.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_1_10",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(J) Residencial Unifamiliar Suburbana. RP.S.&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_J.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_1_11",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(K) Residencial Unifamiliar entre mitgeres. AV-MC.R.&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_K.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_1_12",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(L) Industrial. Ús productiu en trama residencial. RP.A.&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_L.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_1_13",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(M) Industrial. Ús productiu en Polígons Industrials. RP.A.&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_M.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_1_14",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(N) Preservació ambiental N.&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_N.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_1_15",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(R) Preservació arquitectònica ambiental R.&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_R.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_1_16",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(S) Terciari en edificació aïllada (Comercial/Administratiu). RP.A.&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_S.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_1_17",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(T) Turístic en edificació aïllada. RP.A.&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_T.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_1_18",
+        text: "Sistemes dotacionals",
+        // 'data' : categorias_rustico,
+        icon: "images/legends/RV_SISTEMAS.png",
+        a_attr: { class: "no_checkbox" },
+        state: { opened: true },
+        children: this._createDataSistemasDotacionalesPGOU98(),
+      },
+      {
+        id: "2_1_19",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(EL0) Espai Lliure Privat&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_EL0.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_1_20",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(CAT) Catalegs&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_CAT.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_1_21",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(r) Preservació&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_PRESERV_r.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_1_22",
+        text: '&lt;Label style="font-size:8pt">&lt;i>Carencia Infraestructura&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_CARENCIA_IF.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_1_23",
+        text: '&lt;Label style="font-size:8pt">&lt;i>Pasatge&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_PASAJE.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_1_24",
+        text: '&lt;Label style="font-size:8pt">&lt;i>Nova Alineació&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_NA.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_1_25",
+        text: '&lt;Label style="font-size:8pt">&lt;i>Profunditat edificable&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_PROF_EDIF.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_1_26",
+        text: '&lt;Label style="font-size:8pt">&lt;i>Separació qualificació&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_SEPARACION_CALIFIC.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_1_27",
+        text: '&lt;Label style="font-size:8pt">&lt;i>Separació alçada&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_SEPARACION_ALTURAS.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+    ];
+
+    return data;
+  }
+
+  createDataSistemasDotacionalesPRI() {
+    const data = [
+      {
+        id: "2_2_9_1",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(EQ) Equipamientos comunitarios&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_SLEC.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_2_9_2",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(EL) Esppacios libres&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_SLEL.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+    ];
+    return data;
+  }
+
+  createDataCalificacionesPRI() {
+    const data = [
+      {
+        id: "2_2_1",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(PRI_D) Edificación residencial entre medianeras&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_PL_D.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_2_2",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(PRI_E) Vivienda edificación abierta&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_PL_E.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_2_3",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(PRI_I) Vivienda Unifaliliar aislada&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_PL_I.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_2_4",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(PRI_VA) Vivienda adosada&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_PL_VA.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_2_5",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(PRI_VT) Vivienda Tradicional&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_PL_VT.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_2_6",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(S) Comercial / Srevicios&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_PL_S.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_2_7",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(T) Turístico&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_PL_T.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_2_8",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(T) Turístico hotelero&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_PL_TH.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_2_9",
+        text: "Sistemas dotacionales",
+        icon: "images/legends/RV_SISTEMAS.png",
+        a_attr: { class: "no_checkbox" },
+        state: { opened: true },
+        children: this.createDataSistemasDotacionalesPRI(),
+      },
+      {
+        id: "2_2_10",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(EL0) Espai Lliure Privat&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_EL0.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_2_11",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(CAT) Catalogos&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_CAT.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_2_12",
+        text: '&lt;Label style="font-size:8pt">&lt;i>Profunditat edificable&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_PROF_EDIF.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_2_13",
+        text: '&lt;Label style="font-size:8pt">&lt;i>Separació qualificació&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_SEPARACION_CALIFIC.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+    ];
+
+    return data;
+  }
+
+  createDataSistemasDotacionalesPG2023() {
+    const data = [
+      {
+        id: "2_3_1",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(SGEC) Equipamiento comunitario (S.General)&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_SGEC.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_3_2",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(SGEL) Espacio Libre (S.General)&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_SGEL.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_3_3",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(SGCM) Comunicaciones (S.General)&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_SGC.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_3_4",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(SGIF) Infraestructuras (S.General)&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_SGIF.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "2_3_5",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(SGSU) Servicios urbanos (S.General)&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_SGSU.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+    ];
+    return data;
+  }
+
+  createDataAmbitosPG2023() {
+    const data = [
+      {
+        id: "3_3_1",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(AA) Actuaciones aisladas&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_AA.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "3_3_2",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(ATU) Actuaciones de transformación&lt;/i>&lt;/Label>',
+        icon: "images/legends/RV_ATU.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+    ];
+    return data;
+  }
+
+  createDataAmbitosPRI() {
+    const data = [
+      {
+        id: "3_2_1",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(UA) Unidad de actuación&lt;/i>&lt;/Label>',
+        icon: "images/legends/UE_PGV.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+      {
+        id: "3_2_2",
+        text: '&lt;Label style="font-size:8pt">&lt;i>(CP) Corredor Paisagístico&lt;/i>&lt;/Label>',
+        icon: "images/legends/PRI_CP_PGV.png",
+        a_attr: { class: "no_checkbox" },
+        state: { selected: false },
+      },
+    ];
+    return data;
+  }
+
+  createDataOrdenacion() {
+    console.log("Creando datos de ordenación");
+    this.dataOrdenacion = [
+      {
+        id: "root",
+        text: "Plan General 2023 + POD(PGOU98+PRI)",
+        state: {
+          opened: true,
+          selected: false,
+          //selectable: false,
+          checked: false,
+        },
+        children: [
+          {
+            id: 1,
+            text: "Categorias rústico (PG2023)",
+            data: this.mapLayers
+              .getMapLayerByName("pg2023_categorias_rustico")
+              .getLayer(),
+            icon: "images/legends/RV_CATEG_SR.png",
+            state: { checked: true, opened: true },
+            //state: { checked: false, disabled: false },
+            children: this._createDataCategoriasSuelo2023(),
+          },
+          {
+            id: 2,
+            text: "Calificaciones",
+            icon: "images/legends/RV_CALIF_SU.png",
+            state: { checked: true, disabled: false, opened: true },
+            children: [
+              {
+                id: "2_1",
+                text: "Plan General 1998",
+                icon: "images/legends/carpeta_azul_16.png",
+                data: this.mapLayers
+                  .getMapLayerByName("pgou98_calificaciones")
+                  .getLayer(),
+                state: { checked: true, disabled: false },
+                children: this._createDataCalificacionesPGO98(),
+              },
+              {
+                id: "2_2",
+                text: "(PRI) Playa de Palma",
+                icon: "images/legends/carpeta_amarilla_16.png",
+                data: this.mapLayers
+                  .getMapLayerByName("pri_calificaciones")
+                  .getLayer(),
+                state: { checked: true, disabled: false },
+                children: this.createDataCalificacionesPRI(),
+              },
+              {
+                id: "2_3",
+                text: "Plan General 2023",
+                icon: "images/legends/carpeta_roja_16.png",
+                data: this.mapLayers
+                  .getMapLayerByName("pg2023_calificaciones")
+                  .getLayer(),
+                state: { checked: true, disabled: false },
+                children: this.createDataSistemasDotacionalesPG2023(),
+              },
+            ],
+          },
+          {
+            id: 3,
+            text: "Ámbitos",
+            icon: "images/legends/RV_SG_SR.png",
+            state: { checked: true, disabled: false, opened: true },
+            children: [
+              {
+                id: "3_1",
+                text: "PGOU98",
+                icon: "images/legends/carpeta_azul_16.png",
+                data: this.mapLayers
+                  .getMapLayerByName("pgou98_ambitos")
+                  .getLayer(),
+                state: { checked: true, disabled: false },
+                children: this._createDataAmbitosPGOU98(),
+              },
+              {
+                id: "3_2",
+                text: "PRI",
+                icon: "images/legends/carpeta_amarilla_16.png",
+                data: this.mapLayers
+                  .getMapLayerByName("pri_ambitos")
+                  .getLayer(),
+                state: { checked: true, disabled: false },
+                children: this.createDataAmbitosPRI(),
+              },
+              {
+                id: "3_3",
+                text: "PG2023",
+                icon: "images/legends/carpeta_roja_16.png",
+                data: this.mapLayers
+                  .getMapLayerByName("pg2023_ambitos")
+                  .getLayer(),
+                state: { checked: true, disabled: false },
+                children: this.createDataAmbitosPG2023(),
+              },
+            ],
+          },
+        ],
+      },
+    ];
+
+    console.log(this.dataOrdenacion);
+
+    return this.dataOrdenacion;
+  }
+
+  createControls() {
+    $(function () {
+      $("#accordion").accordion({ active: 1 });
+    });
+  }
+
+  createSliderOrdenacion() {
+    this.htmSliderOrdenacion = `&lt;div title="canviar opacitat" id="sliderOrdenacion">&lt;/div>`;
+    $(function () {
+      $("#sliderOrdenacion").slider({
+        orientation: "horizontal",
+        range: "min",
+        max: 100,
+        value: 100,
+        slide: refreshOrdenacion,
+        change: refreshOrdenacion,
+      });
+      function refreshOrdenacion() {
+        var value = $("#sliderOrdenacion").slider("value");
+        var nodeid = $("#jstree_ord").jstree("get_selected");
+        var node = $("#jstree_ord").jstree(true).get_node(nodeid);
+        node.data.setOpacity(value / 100);
+      }
+    });
+    this.htmStyleOrdenacion = `
+        &lt;TABLE style='padding:3px;font-size:9px;font-family:Arial;color:#000000;width:100%;height:10px'  BORDER=0  bgcolor="#cfd7e7" BORDERCOLOR="grey" CELLPADDING=3 CELLSPACING=1>
+        
+            &lt;tr align="left" bgcolor="white" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+                &lt;td style='width:90px'> &lt;LABEL  style='width:120px;padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>OPACITAT&lt;/label>&lt;/td>
+                &lt;td>${this.htmSliderOrdenacion}&lt;/td>
+            
+            &lt;/tr> 
+         
+        &lt;/TABLE>`;
+  }
+
+  createTreeOrdenacion() {
+    const self = this;
+
+    this.htmTreeOrdenacion = `&lt;div style='font-size:9pt;overflow:auto;padding:0px;height:417px' id="jstree_ord">&lt;/div>`;
+
+    $(function () {
+      $("#html1").jstree();
+    });
+    $(function () {
+      $("#jstree_ord").jstree({
+        core: {
+          data: self.createDataOrdenacion(),
+          check_callback: true,
+          multiple: false, // Para permitir selección única,
+        },
+        checkbox: {
+          three_state: true,
+          whole_node: false,
+          tie_selection: false,
+          cascade: false,
+        },
+
+        plugins: ["checkbox"],
+      });
+
+      function traverseOrdenacionCheck(id) {
+        var node = $("#jstree_ord").jstree(true).get_node(id);
+
+        if (typeof node == "object") {
+          if (node.data != null) node.data.addTo(self.map);
+
+          const children = node.children;
+
+          $.each(children, function (k, v) {
+            traverseOrdenacionCheck(v);
+          });
+        }
+      }
+
+      function traverseOrdenacionUnCheck(id) {
+        var node = $("#jstree_ord").jstree(true).get_node(id);
+
+        if (typeof node == "object") {
+          if (node.data != null) self.map.removeLayer(node.data);
+
+          const children = node.children;
+
+          $.each(children, function (k, v) {
+            traverseOrdenacionUnCheck(v);
+          });
+        }
+      }
+
+      $("#jstree_ord").on("check_node.jstree", function (e, data) {
+        traverseOrdenacionCheck(data.node.id);
+      });
+
+      $("#jstree_ord").on("uncheck_node.jstree", function (e, data) {
+        traverseOrdenacionUnCheck(data.node.id);
+      });
+
+      $("#jstree_ord").on("select_node.jstree", function (e, data) {
+        if (
+          data.node.id != "root" &amp;&amp;
+          data.node.id != 2 &amp;&amp;
+          data.node.id != 3 &amp;&amp;
+          data.node.id.substring(0, 4) != "2_1_"
+        ) {
+          $("#sliderOrdenacion").slider("enable");
+          const opacityOrd = data.node.data.options.opacity;
+          $("#sliderOrdenacion").slider("value", opacityOrd * 100);
+        } else {
+          $("#sliderOrdenacion").slider("disable");
+          $("#jstree_ord").jstree(true).deselect_node(data.node);
+        }
+      });
+
+      $("#jstree_ord").bind("loaded.jstree", function (event, data) {
+        //$("#sliderOrdenacion").slider("disable");
+        /*$("#jstree_ord").jstree(true).deselect_node("root");
+				$("#jstree_ord").jstree(true).select_node(1);*/
+      });
+    });
+  }
+
+  // Base Map
+
+  createSliderBaseMap() {
+    self = this;
+    this.htmSliderBaseMap = `&lt;div title="canviar opacitat" id="sliderBM">&lt;/div>`;
+    $(function () {
+      $("#sliderBM").slider({
+        orientation: "horizontal",
+        range: "min",
+        max: 100,
+        value: self.mapBaseActual.options.opacity * 100,
+        slide: refreshM,
+        change: refreshM,
+      });
+      function refreshM() {
+        var value = $("#sliderBM").slider("value");
+        self.mapBaseActual.setOpacity(value / 100);
+      }
+    });
+
+    this.htmStyleBaseMap = `
+        &lt;TABLE style='padding:3px;font-size:9px;font-family:Arial;color:#000000;width:100%;height:10px'  BORDER=0  bgcolor="#cfd7e7" BORDERCOLOR="grey" CELLPADDING=3 CELLSPACING=1>
+        
+            &lt;tr align="left" bgcolor="white" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+                &lt;td style='width:90px'> &lt;LABEL  style='width:120px;padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>OPACITAT&lt;/label>&lt;/td>
+                &lt;td>${this.htmSliderBaseMap}&lt;/td>
+            
+            &lt;/tr> 
+         
+        &lt;/TABLE>`;
+  }
+
+  createControlBaseMap() {
+    const self = this;
+    $(function () {
+      $("input[type='radio']")
+        .checkboxradio({
+          icon: false,
+        })
+        .click(function () {
+          //console.log(mapaBaseActual.options.opacity);
+          const opacityS = self.mapBaseActual.options.opacity;
+
+          if ($("input[id='topo_imi_grey']:checked").val()) {
+            self.map.removeLayer(self.mapBaseActual);
+            self.mapLayers
+              .getMapLayerByName("cartografia_imi_grey")
+              .getLayer()
+              .addTo(self.map);
+            self.mapBaseActual = self.mapLayers
+              .getMapLayerByName("cartografia_imi_grey")
+              .getLayer()
+              .addTo(self.map);
+          }
+          if ($("input[id='topo_imi_color']:checked").val()) {
+            self.map.removeLayer(self.mapBaseActual);
+            self.mapLayers
+              .getMapLayerByName("cartografia_imi_color")
+              .getLayer()
+              .addTo(self.map);
+            self.mapBaseActual = self.mapLayers
+              .getMapLayerByName("cartografia_imi_color")
+              .getLayer()
+              .addTo(self.map);
+          }
+          if ($("input[id='catastro']:checked").val()) {
+            self.map.removeLayer(self.mapBaseActual);
+            self.mapLayers
+              .getMapLayerByName("catastro")
+              .getLayer()
+              .addTo(self.map);
+            self.mapBaseActual = self.mapLayers
+              .getMapLayerByName("catastro")
+              .getLayer()
+              .addTo(self.map);
+          }
+          if ($("input[id='orto_ams_1956']:checked").val()) {
+            self.map.removeLayer(self.mapBaseActual);
+            self.mapLayers
+              .getMapLayerByName("ams_1956_1967")
+              .getLayer()
+              .addTo(self.map);
+            self.mapBaseActual = self.mapLayers
+              .getMapLayerByName("ams_1956_1967")
+              .getLayer()
+              .addTo(self.map);
+          }
+          if ($("input[id='pnoa_2008_10']:checked").val()) {
+            self.map.removeLayer(self.mapBaseActual);
+            self.mapLayers
+              .getMapLayerByName("pnoa_2008_10")
+              .getLayer()
+              .addTo(self.map);
+            self.mapBaseActual = self.mapLayers
+              .getMapLayerByName("pnoa_2008_10")
+              .getLayer()
+              .addTo(self.map);
+          }
+          if ($("input[id='pnoa_2021']:checked").val()) {
+            self.map.removeLayer(self.mapBaseActual);
+            self.mapLayers
+              .getMapLayerByName("pnoa_2021")
+              .getLayer()
+              .addTo(self.map);
+            self.mapBaseActual = self.mapLayers
+              .getMapLayerByName("pnoa_2021")
+              .getLayer()
+              .addTo(self.map);
+          }
+          if ($("input[id='pnoa_2018']:checked").val()) {
+            self.map.removeLayer(self.mapBaseActual);
+            self.mapLayers
+              .getMapLayerByName("pnoa_2018")
+              .getLayer()
+              .addTo(self.map);
+            self.mapBaseActual = self.mapLayers
+              .getMapLayerByName("pnoa_2018")
+              .getLayer()
+              .addTo(self.map);
+          }
+          if ($("input[id='pnoa_2015']:checked").val()) {
+            self.map.removeLayer(self.mapBaseActual);
+            self.mapLayers
+              .getMapLayerByName("pnoa_2015")
+              .getLayer()
+              .addTo(self.map);
+            self.mapBaseActual = self.mapLayers
+              .getMapLayerByName("pnoa_2015")
+              .getLayer()
+              .addTo(self.map);
+          }
+          if ($("input[id='pnoa_2012']:checked").val()) {
+            self.map.removeLayer(self.mapBaseActual);
+            self.mapLayers
+              .getMapLayerByName("pnoa_2012")
+              .getLayer()
+              .addTo(self.map);
+            self.mapBaseActual = self.mapLayers
+              .getMapLayerByName("pnoa_2012")
+              .getLayer()
+              .addTo(self.map);
+          }
+          if ($("input[id='pnoa_2010']:checked").val()) {
+            self.map.removeLayer(self.mapBaseActual);
+            self.mapLayers
+              .getMapLayerByName("pnoa_2010")
+              .getLayer()
+              .addTo(self.map);
+            self.mapBaseActual = self.mapLayers
+              .getMapLayerByName("pnoa_2010")
+              .getLayer()
+              .addTo(self.map);
+          }
+          /*if ($("input[id='orto_pnoa_2008_10']:checked").val()) {
+            self.map.removeLayer(self.mapBaseActual);
+            self.mapLayers
+              .getMapLayerByName("pnoa_2008_10")
+              .getLayer()
+              .addTo(self.map);
+            self.mapBaseActual = self.mapLayers
+              .getMapLayerByName("pnoa_2008_10")
+              .getLayer()
+              .addTo(self.map);
+          }*/
+          if ($("input[id='pnoa_2008']:checked").val()) {
+            self.map.removeLayer(self.mapBaseActual);
+            self.mapLayers
+              .getMapLayerByName("pnoa_2008")
+              .getLayer()
+              .addTo(self.map);
+            self.mapBaseActual = self.mapLayers
+              .getMapLayerByName("pnoa_2008")
+              .getLayer()
+              .addTo(self.map);
+          }
+          if ($("input[id='pnoa_2006']:checked").val()) {
+            self.map.removeLayer(self.mapBaseActual);
+            self.mapLayers
+              .getMapLayerByName("pnoa_2006")
+              .getLayer()
+              .addTo(self.map);
+            self.mapBaseActual = self.mapLayers
+              .getMapLayerByName("pnoa_2006")
+              .getLayer()
+              .addTo(self.map);
+          }
+          if ($("input[id='olistat']:checked").val()) {
+            self.map.removeLayer(self.mapBaseActual);
+            self.mapLayers
+              .getMapLayerByName("olistat")
+              .getLayer()
+              .addTo(self.map);
+            self.mapBaseActual = self.mapLayers
+              .getMapLayerByName("olistat")
+              .getLayer()
+              .addTo(self.map);
+          }
+          if ($("input[id='sigpac']:checked").val()) {
+            self.map.removeLayer(self.mapBaseActual);
+            self.mapLayers
+              .getMapLayerByName("sigpac")
+              .getLayer()
+              .addTo(self.map);
+            self.mapBaseActual = self.mapLayers
+              .getMapLayerByName("sigpac")
+              .getLayer()
+              .addTo(self.map);
+          }
+
+          if ($("input[id='ib_2001']:checked").val()) {
+            self.map.removeLayer(self.mapBaseActual);
+            self.mapLayers
+              .getMapLayerByName("ib_2001")
+              .getLayer()
+              .addTo(self.map);
+            self.mapBaseActual = self.mapLayers
+              .getMapLayerByName("ib_2001")
+              .getLayer()
+              .addTo(self.map);
+          }
+          if ($("input[id='mallorca_1995']:checked").val()) {
+            self.map.removeLayer(self.mapBaseActual);
+            self.mapLayers
+              .getMapLayerByName("mallorca_1995")
+              .getLayer()
+              .addTo(self.map);
+            self.mapBaseActual = self.mapLayers
+              .getMapLayerByName("mallorca_1995")
+              .getLayer()
+              .addTo(self.map);
+          }
+          if ($("input[id='nacional_1981_1986']:checked").val()) {
+            self.map.removeLayer(self.mapBaseActual);
+            self.mapLayers
+              .getMapLayerByName("nacional_1981_1986")
+              .getLayer()
+              .addTo(self.map);
+            self.mapBaseActual = self.mapLayers
+              .getMapLayerByName("nacional_1981_1986")
+              .getLayer()
+              .addTo(self.map);
+          }
+          if ($("input[id='orto_actual']:checked").val()) {
+            self.map.removeLayer(self.mapBaseActual);
+            self.mapLayers
+              .getMapLayerByName("pnoa_actual")
+              .getLayer()
+              .addTo(self.map);
+            self.mapBaseActual = self.mapLayers
+              .getMapLayerByName("pnoa_actual")
+              .getLayer()
+              .addTo(self.map);
+          }
+          if ($("input[id='google_streets']:checked").val()) {
+            self.map.removeLayer(self.mapBaseActual);
+            self.mapLayers
+              .getMapLayerByName("google_streets")
+              .getLayer()
+              .addTo(self.map);
+            self.mapBaseActual = self.mapLayers
+              .getMapLayerByName("google_streets")
+              .getLayer()
+              .addTo(self.map);
+          }
+          if ($("input[id='google_satellite']:checked").val()) {
+            self.map.removeLayer(self.mapBaseActual);
+            self.mapLayers
+              .getMapLayerByName("google_satellite")
+              .getLayer()
+              .addTo(self.map);
+            self.mapBaseActual = self.mapLayers
+              .getMapLayerByName("google_satellite")
+              .getLayer()
+              .addTo(self.map);
+          }
+          if ($("input[id='google_hybrid']:checked").val()) {
+            self.map.removeLayer(self.mapBaseActual);
+            self.mapLayers
+              .getMapLayerByName("google_hybrid")
+              .getLayer()
+              .addTo(self.map);
+            self.mapBaseActual = self.mapLayers
+              .getMapLayerByName("google_hybrid")
+              .getLayer()
+              .addTo(self.map);
+          }
+          if ($("input[id='google_terrain']:checked").val()) {
+            self.map.removeLayer(self.mapBaseActual);
+            self.mapLayers
+              .getMapLayerByName("google_terrain")
+              .getLayer()
+              .addTo(self.map);
+            self.mapBaseActual = self.mapLayers
+              .getMapLayerByName("google_terrain")
+              .getLayer()
+              .addTo(self.map);
+          }
+          if ($("input[id='google_traffic']:checked").val()) {
+            self.map.removeLayer(self.mapBaseActual);
+            self.mapLayers
+              .getMapLayerByName("google_traffic")
+              .getLayer()
+              .addTo(self.map);
+            self.mapBaseActual = self.mapLayers
+              .getMapLayerByName("google_traffic")
+              .getLayer()
+              .addTo(self.map);
+          }
+          if ($("input[id='cartodb_light_all']:checked").val()) {
+            self.map.removeLayer(self.mapBaseActual);
+            self.mapLayers
+              .getMapLayerByName("cartodb_light_all")
+              .getLayer()
+              .addTo(self.map);
+            self.mapBaseActual = self.mapLayers
+              .getMapLayerByName("cartodb_light_all")
+              .getLayer()
+              .addTo(self.map);
+          }
+          if ($("input[id='openstreetmap']:checked").val()) {
+            self.map.removeLayer(self.mapBaseActual);
+            self.mapLayers
+              .getMapLayerByName("openstreetmap")
+              .getLayer()
+              .addTo(self.map);
+            self.mapBaseActual = self.mapLayers
+              .getMapLayerByName("openstreetmap")
+              .getLayer()
+              .addTo(self.map);
+          }
+          if ($("input[id='openstreetmap_gray']:checked").val()) {
+            self.map.removeLayer(self.mapBaseActual);
+            self.mapLayers
+              .getMapLayerByName("openstreetmap_gray")
+              .getLayer()
+              .addTo(self.map);
+            self.mapBaseActual = self.mapLayers
+              .getMapLayerByName("openstreetmap_gray")
+              .getLayer()
+              .addTo(self.map);
+          }
+
+          $("#sliderBM").slider("value", opacityS * 100);
+          self.mapBaseActual.setOpacity(opacityS);
+        });
+
+      $(".controlgroup-vertical").controlgroup({
+        direction: "vertical",
+      });
+    });
+  }
+
+  createBaseMap() {
+    this.createControlBaseMap();
+
+    const htmSelectADMIN = `&lt;div style='width:100%' class='controlgroup-vertical'>
+                            
+        &lt;input type="radio" name="mapa_base" id="topo_imi_grey" checked>
+        &lt;label for="topo_imi_grey">Topografia (Oficial) Escala grises&lt;/label>
+        &lt;input type="radio" name="mapa_base" id="topo_imi_color" >        
+        &lt;label for="topo_imi_color">Topografia (Oficial) Color&lt;/label>
+        &lt;input type="radio" name="mapa_base" id="catastro" >        
+        &lt;label for="catastro">Catastro (Oficina Virtual)&lt;/label>
+        &lt;input type="radio" name="mapa_base" id="orto_actual" >        
+        &lt;label for="orto_actual">(PNOA) OrtoImage mas actual&lt;/label>
+        &lt;input type="radio" name="mapa_base" id="sigpac">        
+        &lt;label for="sigpac">SIGPAC (1997-2003)&lt;/label> 
+        &lt;input type="radio" name="mapa_base" id="ib_2001" >        
+        &lt;label for="ib_2001">Foto aerea IB (2001)&lt;/label>     
+        &lt;input type="radio" name="mapa_base" id="olistat" >        
+        &lt;label for="olistat">OLISTAT (1997-1998)&lt;/label> 
+        &lt;input type="radio" name="mapa_base" id="mallorca_1995" >        
+        &lt;label for="mallorca_1995">Foto aerea Mallorca (1995)&lt;/label>      
+        &lt;input type="radio" name="mapa_base" id="nacional_1981_1986" >        
+        &lt;label for="nacional_1981_1986">Vuelo Nacional (1981-1986)&lt;/label>    
+        &lt;input type="radio" name="mapa_base" id="orto_ams_1956" >        
+        &lt;label for="orto_ams_1956">Vuelo Americano Serie B (1956-1957)&lt;/label>                   
+         
+      &lt;/div>
+   `;
+
+    /*
+    &lt;input type="radio" name="mapa_base" id="orto_pnoa_2008_10" >        
+        &lt;label for="orto_pnoa_2008_10">(PNOA) OrtoImage 2008 (10cm)&lt;/label>  
+  */
+
+    const htmPNOA = `&lt;div style='width:100%' class='controlgroup-vertical'>
+
+        &lt;input type="radio" name="mapa_base" id="pnoa_2021" >
+        &lt;label for="pnoa_2021">(PNOA) OrtoImage 2021 (25cm) &lt;/label>    
+        &lt;input type="radio" name="mapa_base" id="pnoa_2018" >
+        &lt;label for="pnoa_2018">(PNOA) OrtoImage 2018 (15cm) &lt;/label>      
+        &lt;input type="radio" name="mapa_base" id="pnoa_2015" >
+        &lt;label for="pnoa_2015">(PNOA) OrtoImage 2015 (25cm) &lt;/label>
+        &lt;input type="radio" name="mapa_base" id="pnoa_2012" >
+        &lt;label for="pnoa_2012">(PNOA) OrtoImage 2012 (25cm) &lt;/label>
+        &lt;input type="radio" name="mapa_base" id="pnoa_2010" >
+        &lt;label for="pnoa_2010">(PNOA) OrtoImage 2010 (25cm) &lt;/label>
+        &lt;input type="radio" name="mapa_base" id="pnoa_2008_10" >        
+        &lt;label for="pnoa_2008_10">(PNOA) OrtoImage 2008 (10cm)&lt;/label>  
+        &lt;input type="radio" name="mapa_base" id="pnoa_2008" >
+        &lt;label for="pnoa_2008">(PNOA) OrtoImage 2008 (50cm) &lt;/label>
+        &lt;input type="radio" name="mapa_base" id="pnoa_2006" >
+        &lt;label for="pnoa_2006">(PNOA) OrtoImage 2006 (50cm) &lt;/label>
+          
+      &lt;/div>  
+      `;
+
+    const htmSelectGoogle = `&lt;div style='width:100%' class='controlgroup-vertical'>
+                           
+        &lt;input type="radio" name="mapa_base" id="google_streets" >
+        &lt;label for="google_streets">Google Streets&lt;/label>
+        &lt;input type="radio" name="mapa_base" id="google_satellite" >        
+        &lt;label for="google_satellite">Google Satellite&lt;/label>
+        &lt;input type="radio" name="mapa_base" id="google_hybrid" >        
+        &lt;label for="google_hybrid">Google Hybrid&lt;/label>
+        &lt;input type="radio" name="mapa_base" id="google_terrain" >        
+        &lt;label for="google_terrain">Google Terrain&lt;/label>
+        &lt;input type="radio" name="mapa_base" id="google_traffic" >        
+        &lt;label for="google_traffic">Google Traffic&lt;/label>
+        &lt;input type="radio" name="mapa_base" id="cartodb_light_all" >        
+        &lt;label for="cartodb_light_all">Cartodb Light&lt;/label>
+        &lt;input type="radio" name="mapa_base" id="openstreetmap" >        
+        &lt;label for="openstreetmap">OpenStreetMap&lt;/label>
+        &lt;input type="radio" name="mapa_base" id="openstreetmap_gray" >        
+        &lt;label for="openstreetmap_gray">OpenStreetMap (Escala grises)&lt;/label>
+         
+      &lt;/div>
+    `;
+
+    $(function () {
+      $("#tabsBase").tabs({
+        activate: function (event, ui) {
+          //
+        },
+      });
+    });
+
+    //this.createControlBaseMap();
+
+    this.htmlTabsBase = `&lt;div style='padding:0px' id="tabsBase">
+        &lt;ul>
+          &lt;li>&lt;a href="#admin">ADMIN&lt;/a>&lt;/li>      
+          &lt;li>&lt;a href="#pnoa">PNOA&lt;/a>&lt;/li>      
+          &lt;li>&lt;a href="#google">GOOGLE / OTROS&lt;/a>&lt;/li>              
+        &lt;/ul>
+        &lt;div id="admin">
+          ${htmSelectADMIN}        
+        &lt;/div>     
+        &lt;div id="pnoa">
+          ${htmPNOA}               
+        &lt;/div>   
+        &lt;div id="google">
+          ${htmSelectGoogle}               
+        &lt;/div>         
+    &lt;/div>        
+    `;
+  }
+
+  downloadSelectedConsultas() {
+    const selectedNode = $("#jstree_consultas")
+      .jstree(true)
+      .get_selected(true)[0];
+    const layer = this.mapLayers.getMapLayerByName(selectedNode.id).getLayer();
+    //const nodes = $("#jstree_consultas").jstree("get_selected");
+    //const layer = this.mapLayers.getMapLayerByName(nodes[0]).getLayer();
+    //const name = this.mapLayers.getMapLayerByName(nodes[0]).getName();
+    const geojson = layer.toGeoJSON();
+    const jsonData = JSON.stringify(geojson);
+    var a = document.createElement("a");
+    var file = new Blob([jsonData], { type: "text/plain" });
+    a.href = URL.createObjectURL(file);
+    a.download = selectedNode.text + ".geojson";
+    a.click();
+  }
+
+  deleteSelectedConsultas() {
+    var nodes = $("#jstree_consultas").jstree("get_selected");
+
+    for (var p = 0; p &lt; nodes.length; p++) {
+      if (nodes[p].id != "root") {
+        console.log(nodes[p]);
+        $("#jstree_consultas").jstree().delete_node(nodes[p]);
+        const layer = this.mapLayers.getMapLayerByName(nodes[p]).getLayer();
+        this.map.removeLayer(layer);
+        console.log(nodes[p]);
+        const index = this.mapLayers.getIndexByName(nodes[p]);
+        this.mapLayers.layers.splice(index, 1);
+      }
+    }
+  }
+
+  createStyleConsultas() {
+    this.htmlStyleConsultas = `
+        &lt;TABLE style='padding:3px;font-size:9px;font-family:Arial;color:#000000;width:100%;height:10px'  BORDER=0  bgcolor="#cfd7e7" BORDERCOLOR="grey" CELLPADDING=3 CELLSPACING=1>
+        
+            &lt;tr align="left" bgcolor="white" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+                &lt;td> &lt;LABEL  style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>COLOR&lt;/label>&lt;/td>
+                &lt;td>${this.htmColorConsultas}&lt;/td>
+            
+            &lt;/tr> 
+            &lt;tr align="left" bgcolor="white" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+                &lt;td> &lt;LABEL  style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>OPACITAT&lt;/label>&lt;/td>
+                &lt;td>${this.htmSliderConsultas}&lt;/td>
+            
+            &lt;/tr> 
+         
+        &lt;/TABLE>`;
+  }
+
+  generateIcon(iconColor) {
+    // Tamaño del icono cuadrado
+    const iconSize = 16; // Puedes ajustar el tamaño según tus necesidades
+
+    // Color del icono (en formato hexadecimal)
+    //const iconColor = "#FF5733"; // Cambia esto al color que desees
+
+    // Crea un elemento canvas para dibujar el icono
+    const canvas = document.createElement("canvas");
+    canvas.width = iconSize;
+    canvas.height = iconSize;
+
+    // Obtiene el contexto 2D del canvas
+    const context = canvas.getContext("2d");
+
+    // Dibuja un cuadrado relleno con el color especificado
+    context.fillStyle = iconColor;
+    context.fillRect(0, 0, iconSize, iconSize);
+    context.strokeStyle = "black";
+    context.strokeRect(0, 0, iconSize, iconSize);
+
+    // Convierte el canvas a una imagen Data URL en formato PNG
+    const iconDataUrl = canvas.toDataURL("image/png");
+
+    // Ahora tienes el icono en forma de Data URL que puedes utilizar en tu jstree
+    // Puedes asignarlo a un nodo jstree como su icono personalizado
+
+    return iconDataUrl;
+  }
+
+  createControlPickerConsultas() {
+    self = this;
+    this.htmColorConsultas = `&lt;input  title="canviar color" id='colorpicker' />`;
+    $(function () {
+      $("#colorpicker").spectrum({
+        color: "#f00",
+        change: function (color) {
+          color.toHexString(); // #ff0000
+          console.log("change=" + color);
+
+          var valueS = color.toHexString();
+          var node = $("#jstree_consultas").jstree("get_selected");
+          const layer = self.mapLayers.getMapLayerByName(node[0]).getLayer();
+          layer.setStyle({
+            fillColor: valueS,
+          });
+          layer.options.fillColor = valueS;
+
+          const jstree = $("#jstree_consultas").jstree(true);
+
+          jstree.set_icon(node[0], self.generateIcon(valueS));
+        },
+      });
+    });
+  }
+
+  createSliderConsultas() {
+    self = this;
+    this.htmSliderConsultas = `&lt;div title="canviar opacitat" id="sliderConsultas">&lt;/div>`;
+    $(function () {
+      $("#sliderConsultas").slider({
+        orientation: "horizontal",
+        range: "min",
+        max: 100,
+        value: 100,
+        slide: refreshConsultas,
+        change: refreshConsultas,
+      });
+      function refreshConsultas() {
+        const value = $("#sliderConsultas").slider("value");
+        var node = $("#jstree_consultas").jstree("get_selected");
+        const layer = self.mapLayers.getMapLayerByName(node[0]).getLayer();
+        layer.setStyle({
+          fillOpacity: value / 100,
+          opacity: value / 100,
+        });
+        layer.options.fillOpacity = value / 100;
+        layer.options.opacity = value / 100;
+      }
+    });
+  }
+
+  createTreeConsultas() {
+    const self = this;
+    this.htmTreeConsultas = `&lt;div style='font-size:9pt;overflow:auto;padding:10px;height:347px' id="jstree_consultas">&lt;/div>`;
+    $(function () {
+      $("#jstree_consultas").jstree({
+        core: {
+          data: [
+            {
+              id: "root",
+              text: "Consultas",
+              state: {
+                opened: true,
+                selected: false,
+                checked: true,
+              },
+            },
+          ],
+          //check_callback: true,
+          check_callback: function (
+            operation,
+            node,
+            node_parent,
+            node_position,
+            more
+          ) {
+            if (operation === "move_node") {
+              if (node.id == "root") return false;
+              return true;
+            }
+          },
+        },
+        checkbox: {
+          three_state: true,
+          whole_node: false, //Used to check/uncheck node only if clicked on checkbox icon, and not on the whole node including label
+          tie_selection: false,
+          cascade: false,
+        },
+        contextmenu: {
+          items: function (node) {
+            return {
+              edit: {
+                label: "Editar",
+                action: function () {
+                  // Habilitar la edición del nodo
+                  $("#jstree_consultas").jstree("edit", node);
+                },
+              },
+            };
+          },
+        },
+
+        plugins: ["checkbox", "wholerow", "dnd"],
+      });
+
+      function traverseConsultasCheck(id) {
+        var node = $("#jstree_consultas").jstree(true).get_node(id);
+
+        if (typeof node == "object") {
+          if (node.data != null) node.data.addTo(self.map);
+
+          const children = node.children;
+
+          $.each(children, function (k, v) {
+            traverseConsultasCheck(v);
+          });
+        }
+      }
+
+      function traverseConsultasUnCheck(id) {
+        var node = $("#jstree_consultas").jstree(true).get_node(id);
+
+        if (typeof node == "object") {
+          if (node.data != null) self.map.removeLayer(node.data);
+
+          const children = node.children;
+
+          $.each(children, function (k, v) {
+            traverseConsultasUnCheck(v);
+          });
+        }
+      }
+
+      $("#jstree_consultas").on("check_node.jstree", function (e, data) {
+        traverseConsultasCheck(data.node.id);
+        console.log(data.node);
+      });
+
+      $("#jstree_consultas").on("uncheck_node.jstree", function (e, data) {
+        traverseConsultasUnCheck(data.node.id);
+        console.log(data.node);
+      });
+
+      $("#jstree_consultas").on("select_node.jstree", function (e, data) {
+        if (data.node.id != "root") {
+          $("#sliderConsultas").slider("enable");
+          const opacity = data.node.data.options.opacity;
+          $("#sliderConsultas").slider("value", opacity * 100);
+          const colorFill = data.node.data.options.fillColor;
+          console.log(data.node.data.options);
+          $("#colorpicker").spectrum("set", colorFill);
+        } else {
+          $("#sliderConsultas").slider("disable");
+          $("#jstree_consultas").jstree(true).deselect_node(data.node);
+        }
+      });
+
+      // Escuchar el evento dblclick en el nodo
+      $("#jstree_consultas").on("dblclick.jstree", function (e) {
+        console.log(e);
+        var tree = $.jstree.reference("#jstree_consultas");
+        var nodeId = tree.get_node(e.target).id;
+        console.log("ID del nodo: " + nodeId);
+        $("#jstree_consultas").jstree("edit", nodeId);
+        //var node = data.node;
+        // Habilitar la edición del nodo
+        //;
+      });
+    });
+  }
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Router.html">Router</a></li></ul><h3>Classes</h3><ul><li><a href="DataReader.html">DataReader</a></li><li><a href="FeatureUrbanistic.html">FeatureUrbanistic</a></li><li><a href="Form_CATALOGO_PGOU98.html">Form_CATALOGO_PGOU98</a></li><li><a href="MapLayer.html">MapLayer</a></li><li><a href="MapLayers.html">MapLayers</a></li><li><a href="MapLayersVisor.html">MapLayersVisor</a></li><li><a href="TOC.html">TOC</a></li></ul><h3>Global</h3><ul><li><a href="global.html#getFeatureByPoint">getFeatureByPoint</a></li><li><a href="global.html#getGeojson">getGeojson</a></li><li><a href="global.html#getIntersection">getIntersection</a></li><li><a href="global.html#getListarCarpetasV2">getListarCarpetasV2</a></li><li><a href="global.html#getSelect">getSelect</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a> on Sat Nov 25 2023 11:56:57 GMT+0100 (hora estándar de Europa central)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: controllers/sedipualb.controller.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: controllers/sedipualb.controller.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const crypto = require("crypto");
+const soap = require("soap");
+
+let clientSoap = null;
+
+soap.createClient(
+  "https://pre-07040.sedipualba.es/segex/wssegex.asmx?wsdl",
+  (err, client) => {
+    if (err) {
+      console.error(err);
+      return;
+    }
+
+    clientSoap = client;
+  }
+);
+
+console.log(clientSoap);
+
+const getHashedPassword = async (clearPassword) => {
+  const timestamp = new Date()
+    .toISOString()
+    .replace(/[-:]/g, "")
+    .replace("T", "")
+    .split(".")[0];
+
+  const hashInputString = timestamp + clearPassword;
+
+  const hash = crypto
+    .createHash("sha256")
+    .update(hashInputString, "utf8")
+    .digest("base64");
+
+  return timestamp + hash;
+};
+
+const getInfoDocumento = async (req, res) => {
+	const wsseg_user=req.query.wsseg_user;
+  const clearPassword = req.query.clearPassword;
+  const pk_entidad = req.query.pk_entidad;
+  const pkDocumento = req.query.pkDocumento;
+
+  const hashedPassword = await getHashedPassword(clearPassword);
+
+  const args1 = {
+    wsseg_user: wsseg_user,
+    wsseg_pass: hashedPassword,
+    pk_entidad: pk_entidad,
+    pkDocumento: pkDocumento,
+  };
+
+	clientSoap.ObtenerInfoDocumento(args1, async (err, result) => {
+		if (err) {
+			console.error(err);
+			return;
+		}
+		res.send(result);
+	});
+  
+};
+
+
+
+/**
+ * Obtiene una lista de carpetas versión 2 utilizando un servicio SOAP.&lt;br>&lt;br>
+ * 
+ * Endpoint: &lt;strong>https://nombre_dominio/opg/listarCarpetasV2&lt;/strong>
+ *
+ * @param {Object} req - El objeto de solicitud.
+ * @param {string} req.query.wsseg_user - Nombre de usuario para el servicio.
+ * @param {string} req.query.clearPassword - Contraseña en texto claro.
+ * @param {string} req.query.pkEntidad - Clave primaria de la entidad.
+ * @param {string} req.query.codigoExpediente - Código del expediente.
+ * @param {string} req.query.pkCarpetaPadre - Clave primaria de la carpeta padre.
+ * @param {Object} res - El objeto de respuesta.
+ * @returns {Promise} Una promesa que resuelve con la lista de carpetas o un mensaje de error.
+ * @throws {Error} Si hay un error en la solicitud SOAP, se registra y se devuelve un mensaje de error.
+ */
+const getListarCarpetasV2 = async (req, res) => {
+  try {
+    // Obtiene los parámetros de la solicitud
+    const wsseg_user = req.query.wsseg_user;
+    const clearPassword = req.query.clearPassword;
+    const pkEntidad = req.query.pkEntidad;
+    const codigoExpediente = req.query.codigoExpediente;
+    const pkCarpetaPadre = req.query.pkCarpetaPadre;
+
+    // Obtiene la contraseña encriptada
+    const hashedPassword = await getHashedPassword(clearPassword);
+
+    // Configura los argumentos para la solicitud SOAP
+    const args1 = {
+      wsseg_user: wsseg_user,
+      wsseg_pass: hashedPassword,
+      pkEntidad: pkEntidad,
+      codigoExpediente: codigoExpediente,
+      pkCarpetaPadre: pkCarpetaPadre,
+    };
+
+    // Llama al servicio SOAP para obtener la lista de carpetas
+    clientSoap.ListarCarpetasV2(args1, async (err, result) => {
+      if (err) {
+        // Manejo de errores: registra el error y envía un mensaje de error al cliente
+        console.error(err);
+        return;
+      }
+      // Envía la lista de carpetas como respuesta al cliente
+      res.send(result);
+    });
+  } catch (error) {
+    // Manejo de errores: registra el error y envía un mensaje de error al cliente
+    console.error("Error en la solicitud SOAP:", error);
+    res.status(500).send("Error en el servidor");
+  }
+};
+
+
+const getListarDocumentosV2 = async (req, res) => {
+  const clearPassword = req.query.clearPassword;
+  const pkEntidad = req.query.pkEntidad;
+  const codigoExpediente = req.query.codigoExpediente;
+  const pkCarpetaPadre = req.query.pkCarpetaPadre;
+  const nifUsuario = req.query.nifUsuario;
+
+  const hashedPassword = await getHashedPassword(clearPassword);
+
+  console.log(hashedPassword);
+  console.log(pkEntidad);
+  console.log(codigoExpediente);
+  console.log(pkCarpetaPadre);
+  console.log(nifUsuario);
+
+  const args1 = {
+    wsseg_user: "07040_SIGDU",
+    wsseg_pass: hashedPassword,
+    pkEntidad: pkEntidad,
+    codigoExpediente: codigoExpediente,
+    pkCarpetaPadre: pkCarpetaPadre,
+    nifUsuario: nifUsuario,
+  };
+
+	clientSoap.ListarDocumentosV2(args1, async (err, result) => {
+		if (err) {
+			console.error(err);
+			return;
+		}
+		res.send(result);
+	});
+  
+};
+
+const getListExpedientes = async (req, res) => {
+  const clearPassword = req.query.clearPassword;
+  const numPage = req.query.numPage;
+  const estado = req.query.estado;
+  const cdiInteresado = req.query.cdiInteresado;
+  const nombreInteresado = req.query.nombreInteresado;
+  const idNodoContenedorTramitador = req.query.idNodoContenedorTramitador;
+
+  const hashedPassword = await getHashedPassword(clearPassword);
+  console.log(hashedPassword);
+
+  const args = {
+    idEntidad: "07040",
+    wsSegUser: "07040_SIGDU",
+    wsSegPass: hashedPassword,
+    numPagina: numPage,
+    estado: estado,
+    cdiInteresado: cdiInteresado,
+    nombreInteresado: nombreInteresado,
+    idNodoContenedorTramitador: idNodoContenedorTramitador,
+  };
+
+  clientSoap.ListExpedientes(args, async (err, result) => {
+    if (err) {
+      console.error(err);
+      return;
+    }
+    res.send(result);
+  });
+};
+
+const getListMaterias = async (req, res) => {
+  const clearPassword = req.query.clearPassword;
+	const idEntidad= req.query.idEntidad;
+	const wsseg_user = req.query.wsseg_user;
+
+  const hashedPassword = await getHashedPassword(clearPassword);
+  console.log(hashedPassword);
+
+  const args = {
+    idEntidad: idEntidad,
+    wsseg_user: wsseg_user,
+    wsseg_pass: hashedPassword,
+  };
+
+  clientSoap.ListMaterias(args, async (err, result) => {
+    if (err) {
+      console.error(err);
+      return;
+    }
+    res.send(result);
+  });
+};
+
+const getListSubmaterias = async (req, res) => {
+  const clearPassword = req.query.clearPassword;
+	const idEntidad= req.query.idEntidad;
+	const wsseg_user = req.query.wsseg_user;
+	const idMateria = req.query.idMateria;
+
+  const hashedPassword = await getHashedPassword(clearPassword);
+  console.log(hashedPassword);
+
+  const args = {
+    wsseg_user: wsseg_user,
+    wsseg_pass: hashedPassword,
+		idEntidad: idEntidad,
+		idMateria: idMateria,
+  };
+
+  clientSoap.ListSubmaterias(args, async (err, result) => {
+    if (err) {
+      console.error(err);
+      return;
+    }
+    res.send(result);
+  });
+};
+
+const getListTiposProcedimiento = async (req, res) => {
+  const clearPassword = req.query.clearPassword;
+	const idEntidad= req.query.idEntidad;
+	const wsseg_user = req.query.wsseg_user;
+	const idSubmateria = req.query.idSubmateria;
+
+  const hashedPassword = await getHashedPassword(clearPassword);
+  console.log(hashedPassword);
+
+  const args = {
+    wsseg_user: wsseg_user,
+    wsseg_pass: hashedPassword,
+		idEntidad: idEntidad,
+		idSubmateria: idSubmateria,
+  };
+
+  clientSoap.ListTiposProcedimiento(args, async (err, result) => {
+    if (err) {
+      console.error(err);
+      return;
+    }
+    res.send(result);
+  });
+};
+
+const getListSubtiposProcedimiento = async (req, res) => {
+  const clearPassword = req.query.clearPassword;
+	const idEntidad= req.query.idEntidad;
+	const wsseg_user = req.query.wsseg_user;
+	const idProcedimiento = req.query.idProcedimiento;
+
+  const hashedPassword = await getHashedPassword(clearPassword);
+  console.log(hashedPassword);
+
+  const args = {
+    wsseg_user: wsseg_user,
+    wsseg_pass: hashedPassword,
+		idEntidad: idEntidad,
+		idProcedimiento: idProcedimiento,
+  };
+
+  clientSoap.ListSubtiposProcedimiento(args, async (err, result) => {
+    if (err) {
+      console.error(err);
+      return;
+    }
+    res.send(result);
+  });
+};
+
+
+
+module.exports = {
+	getListMaterias,
+	getListSubmaterias,
+	getListTiposProcedimiento,
+	getListSubtiposProcedimiento,
+  getListExpedientes,
+  getListarDocumentosV2,
+	getListarCarpetasV2,
+	getInfoDocumento,
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Router.html">Router</a></li></ul><h3>Classes</h3><ul><li><a href="DataReader.html">DataReader</a></li><li><a href="FeatureUrbanistic.html">FeatureUrbanistic</a></li><li><a href="Form_CATALOGO_PGOU98.html">Form_CATALOGO_PGOU98</a></li><li><a href="MapLayer.html">MapLayer</a></li><li><a href="MapLayers.html">MapLayers</a></li><li><a href="MapLayersVisor.html">MapLayersVisor</a></li><li><a href="TOC.html">TOC</a></li></ul><h3>Global</h3><ul><li><a href="global.html#getFeatureByPoint">getFeatureByPoint</a></li><li><a href="global.html#getGeojson">getGeojson</a></li><li><a href="global.html#getIntersection">getIntersection</a></li><li><a href="global.html#getListarCarpetasV2">getListarCarpetasV2</a></li><li><a href="global.html#getSelect">getSelect</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a> on Sat Nov 25 2023 11:56:57 GMT+0100 (hora estándar de Europa central)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
