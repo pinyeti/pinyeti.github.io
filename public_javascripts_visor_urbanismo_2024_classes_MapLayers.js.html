@@ -188,7 +188,111 @@ class MapLayersVisor extends MapLayers {
     this.setLayer_pg2023_calificaciones();
     this.setLayer_pg2023_categorias_rustico();
     this.setLayer_pg2023_ambitos();
+    //this.setLayer_PA_aprobacion_inial();
   }
+
+  /**
+   * Establece la capa de expediente PA con aprobacion inicial con vigencia &lt; 2 años
+   * @returns {void}
+   */
+  async setLayer_PA_aprobacion_inial() {
+    const reader = new DataReader();
+
+    const geojson = await reader.readDataFeature(
+      "pa_modificacion_pgou",
+      "DATE_PART('year', CURRENT_DATE) - DATE_PART('year', TO_DATE(a_ini, 'YYYY-MM-DD'))&lt;2 and a_def is null"
+    );
+
+    console.log(geojson);
+
+    // Crear una nueva colección de puntos
+    const pointFeatures = geojson.features.map((feature) => {
+      // Obtener el centroide de cada polígono
+      const centroid = turf.centroid(feature);
+
+      // Crear un nuevo punto a partir del centroide
+      const point = turf.point([
+        centroid.geometry.coordinates[0],
+        centroid.geometry.coordinates[1],
+      ]);
+
+      point.properties = {
+        expediente: feature.properties.expedient,
+        a_ini: feature.properties.a_ini,
+
+        // Agrega aquí más propiedades si es necesario
+      };
+
+      return point;
+    });
+
+    // Crear un nuevo GeoJSON con los puntos
+    const pointGeoJSON = {
+      type: "FeatureCollection",
+      features: pointFeatures,
+    };
+
+    const style = () => {
+      return {
+        fillColor: "blue",
+        weight: 6,
+        opacity: 1,
+        color: "blue",
+        dashArray: "2,8",
+        fillOpacity: 0,
+      };
+    };
+
+    const polyLayer = L.geoJSON(geojson, { style: style });
+
+    const pointsLayer = L.geoJSON(pointGeoJSON, {
+      minZoom: 18,
+      maxZoom: 22,
+      pointToLayer: function (feature, latlng) {
+        // Crear un círculo
+        const circleMarker = L.circleMarker(latlng, {
+          radius: 6,
+          fillColor: "red",
+          color: "yellow",
+          weight: 4,
+          opacity: 1,
+          fillOpacity: 0.8,
+        });
+
+        // Crear un texto
+        const text = L.divIcon({
+          className: "text-label",
+          html: `&lt;div style="padding:3px">${feature.properties.expediente}&lt;/div>`,
+        });
+
+        console.log(feature);
+        // Agregar el texto al círculo
+        circleMarker.bindTooltip(
+          feature.properties.expediente + "&lt;br>" + feature.properties.a_ini,
+          {
+            permanent: true,
+            direction: "center",
+            opacity: 0.8,
+            offset: [0, -30],
+            className: "text-label",
+          }
+        );
+
+        // Retornar un grupo que contiene el círculo y el texto
+        return L.layerGroup([circleMarker]);
+      },
+    });
+  
+
+    const layerPA_ai = L.layerGroup([polyLayer,pointsLayer]);
+
+    console.log("añadiendo......layer=", layerPA_ai);
+  
+    this.pushMapLayer("layerPA_ai", layerPA_ai);
+   
+
+  }
+
 
   /**
    * Establece la capa de tráfico de Google Maps.
@@ -866,13 +970,13 @@ class MapLayersVisor extends MapLayers {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Frontend.html">Frontend</a></li><li><a href="module-Router.html">Router</a></li></ul><h3>Namespaces</h3><ul><li><a href="SedipualbaController.html">SedipualbaController</a></li><li><a href="VisorController.html">VisorController</a></li></ul><h3>Classes</h3><ul><li><a href="module-Frontend.DataReader.html">DataReader</a></li><li><a href="module-Frontend.FeatureUrbanistic.html">FeatureUrbanistic</a></li><li><a href="module-Frontend.Form_CATALOGO_PGOU98.html">Form_CATALOGO_PGOU98</a></li><li><a href="module-Frontend.MapLayer.html">MapLayer</a></li><li><a href="module-Frontend.MapLayers.html">MapLayers</a></li><li><a href="module-Frontend.MapLayersVisor.html">MapLayersVisor</a></li><li><a href="module-Frontend.MapManager.html">MapManager</a></li><li><a href="module-Frontend.TOC.html">TOC</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Frontend.html">Frontend</a></li><li><a href="module-Router.html">Router</a></li></ul><h3>Namespaces</h3><ul><li><a href="SedipualbaController.html">SedipualbaController</a></li><li><a href="VisorController.html">VisorController</a></li></ul><h3>Classes</h3><ul><li><a href="module-Frontend.Asistente.html">Asistente</a></li><li><a href="module-Frontend.DataReader.html">DataReader</a></li><li><a href="module-Frontend.DataReaderSedipualb.html">DataReaderSedipualb</a></li><li><a href="module-Frontend.FeatureUrbanistic.html">FeatureUrbanistic</a></li><li><a href="module-Frontend.Form_CATALOGO_PGOU98.html">Form_CATALOGO_PGOU98</a></li><li><a href="module-Frontend.Form_PARAMETROS_CALIFICACIONES_PRI.html">Form_PARAMETROS_CALIFICACIONES_PRI</a></li><li><a href="module-Frontend.Form_PARAMETROS_EQ_PGOU98.html">Form_PARAMETROS_EQ_PGOU98</a></li><li><a href="module-Frontend.Form_PARAMETROS_RSD_PGOU98.html">Form_PARAMETROS_RSD_PGOU98</a></li><li><a href="module-Frontend.Form_PARAMETROS_SEC_PGOU98.html">Form_PARAMETROS_SEC_PGOU98</a></li><li><a href="module-Frontend.Form_PARAMETROS_TER_PGOU98.html">Form_PARAMETROS_TER_PGOU98</a></li><li><a href="module-Frontend.Form_PARAMETROS_VE_PGOU98.html">Form_PARAMETROS_VE_PGOU98</a></li><li><a href="module-Frontend.Form_SISTEMAS_PG2023.html">Form_SISTEMAS_PG2023</a></li><li><a href="module-Frontend.Form_SISTEMAS_PGOU98.html">Form_SISTEMAS_PGOU98</a></li><li><a href="module-Frontend.Form_SISTEMAS_PRI.html">Form_SISTEMAS_PRI</a></li><li><a href="module-Frontend.Form_UNIDAD_EJECUCION_PGOU98.html">Form_UNIDAD_EJECUCION_PGOU98</a></li><li><a href="module-Frontend.Form_UNIDAD_EJECUCION_PRI.html">Form_UNIDAD_EJECUCION_PRI</a></li><li><a href="module-Frontend.I18nHandler.html">I18nHandler</a></li><li><a href="module-Frontend.MapLayer.html">MapLayer</a></li><li><a href="module-Frontend.MapLayers.html">MapLayers</a></li><li><a href="module-Frontend.MapLayersVisor.html">MapLayersVisor</a></li><li><a href="module-Frontend.MapManager.html">MapManager</a></li><li><a href="module-Frontend.MapQuery.html">MapQuery</a></li><li><a href="module-Frontend.NormativaDialog.html">NormativaDialog</a></li><li><a href="module-Frontend.QueryDialog.html">QueryDialog</a></li><li><a href="module-Frontend.QueryDialogEXP.html">QueryDialogEXP</a></li><li><a href="module-Frontend.QueryDialogEXP_Planeamiento.html">QueryDialogEXP_Planeamiento</a></li><li><a href="module-Frontend.QueryDialogPG2023.html">QueryDialogPG2023</a></li><li><a href="module-Frontend.QueryDialogPGOU98.html">QueryDialogPGOU98</a></li><li><a href="module-Frontend.QueryDialogPRI.html">QueryDialogPRI</a></li><li><a href="module-Frontend.SIGDUMap.html">SIGDUMap</a></li><li><a href="module-Frontend.Sedipualb.html">Sedipualb</a></li><li><a href="module-Frontend.TOC.html">TOC</a></li></ul><h3>Global</h3><ul><li><a href="global.html#mainApp">mainApp</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a> on Sun Nov 26 2023 09:11:52 GMT+0100 (hora estándar de Europa central)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a> on Sat Dec 16 2023 19:01:33 GMT+0100 (hora estándar de Europa central)
 </footer>
 
 <script> prettyPrint(); </script>

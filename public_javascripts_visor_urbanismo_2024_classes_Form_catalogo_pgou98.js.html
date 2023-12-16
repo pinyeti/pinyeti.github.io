@@ -35,7 +35,8 @@ class Form_CATALOGO_PGOU98 {
    * Constructor de la clase.
    * @param {object} entity - La entidad geoespacial.
    */
-  constructor(entity) {
+  constructor(entity, sigduMap) {
+    this.sigduMap = sigduMap;
     this.geojson = entity.getGeojson();
     this.feature = entity.getFeature();
     this.codigo = entity.getFeature().properties.codigo;
@@ -337,7 +338,7 @@ class Form_CATALOGO_PGOU98 {
    * @returns {void}
    */
   async createForm() {
-    map.spin(true);
+    this.sigduMap.map.spin(true);
 
     //console.log(this.html_IDENTIFICACION);
     console.log(this.html_buttons);
@@ -392,7 +393,7 @@ class Form_CATALOGO_PGOU98 {
       });
     }
 
-    if (sidebarStatus == "cerrado") {
+    if (this.sigduMap.sidebarStatus == "cerrado") {
       const self = this; // Almacena una referencia a 'this'
       window.setTimeout(function () {
         this.mapManager = new MapManager("map2");
@@ -403,10 +404,9 @@ class Form_CATALOGO_PGOU98 {
       this.mapManager.createElement(self.geojson, self.color, self.fillColor);
     }
 
-    const opened = await sidebar.open("userinfo");
+    await this.sigduMap.sidebar.open("userinfo");
 
-    console.log("opened", opened);
-    map.spin(false);
+    this.sigduMap.map.spin(false);
   }
 }
 </code></pre>
@@ -419,13 +419,13 @@ class Form_CATALOGO_PGOU98 {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Frontend.html">Frontend</a></li><li><a href="module-Router.html">Router</a></li></ul><h3>Namespaces</h3><ul><li><a href="SedipualbaController.html">SedipualbaController</a></li><li><a href="VisorController.html">VisorController</a></li></ul><h3>Classes</h3><ul><li><a href="module-Frontend.DataReader.html">DataReader</a></li><li><a href="module-Frontend.FeatureUrbanistic.html">FeatureUrbanistic</a></li><li><a href="module-Frontend.Form_CATALOGO_PGOU98.html">Form_CATALOGO_PGOU98</a></li><li><a href="module-Frontend.MapLayer.html">MapLayer</a></li><li><a href="module-Frontend.MapLayers.html">MapLayers</a></li><li><a href="module-Frontend.MapLayersVisor.html">MapLayersVisor</a></li><li><a href="module-Frontend.MapManager.html">MapManager</a></li><li><a href="module-Frontend.TOC.html">TOC</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Frontend.html">Frontend</a></li><li><a href="module-Router.html">Router</a></li></ul><h3>Namespaces</h3><ul><li><a href="SedipualbaController.html">SedipualbaController</a></li><li><a href="VisorController.html">VisorController</a></li></ul><h3>Classes</h3><ul><li><a href="module-Frontend.Asistente.html">Asistente</a></li><li><a href="module-Frontend.DataReader.html">DataReader</a></li><li><a href="module-Frontend.DataReaderSedipualb.html">DataReaderSedipualb</a></li><li><a href="module-Frontend.FeatureUrbanistic.html">FeatureUrbanistic</a></li><li><a href="module-Frontend.Form_CATALOGO_PGOU98.html">Form_CATALOGO_PGOU98</a></li><li><a href="module-Frontend.Form_PARAMETROS_CALIFICACIONES_PRI.html">Form_PARAMETROS_CALIFICACIONES_PRI</a></li><li><a href="module-Frontend.Form_PARAMETROS_EQ_PGOU98.html">Form_PARAMETROS_EQ_PGOU98</a></li><li><a href="module-Frontend.Form_PARAMETROS_RSD_PGOU98.html">Form_PARAMETROS_RSD_PGOU98</a></li><li><a href="module-Frontend.Form_PARAMETROS_SEC_PGOU98.html">Form_PARAMETROS_SEC_PGOU98</a></li><li><a href="module-Frontend.Form_PARAMETROS_TER_PGOU98.html">Form_PARAMETROS_TER_PGOU98</a></li><li><a href="module-Frontend.Form_PARAMETROS_VE_PGOU98.html">Form_PARAMETROS_VE_PGOU98</a></li><li><a href="module-Frontend.Form_SISTEMAS_PG2023.html">Form_SISTEMAS_PG2023</a></li><li><a href="module-Frontend.Form_SISTEMAS_PGOU98.html">Form_SISTEMAS_PGOU98</a></li><li><a href="module-Frontend.Form_SISTEMAS_PRI.html">Form_SISTEMAS_PRI</a></li><li><a href="module-Frontend.Form_UNIDAD_EJECUCION_PGOU98.html">Form_UNIDAD_EJECUCION_PGOU98</a></li><li><a href="module-Frontend.Form_UNIDAD_EJECUCION_PRI.html">Form_UNIDAD_EJECUCION_PRI</a></li><li><a href="module-Frontend.I18nHandler.html">I18nHandler</a></li><li><a href="module-Frontend.MapLayer.html">MapLayer</a></li><li><a href="module-Frontend.MapLayers.html">MapLayers</a></li><li><a href="module-Frontend.MapLayersVisor.html">MapLayersVisor</a></li><li><a href="module-Frontend.MapManager.html">MapManager</a></li><li><a href="module-Frontend.MapQuery.html">MapQuery</a></li><li><a href="module-Frontend.NormativaDialog.html">NormativaDialog</a></li><li><a href="module-Frontend.QueryDialog.html">QueryDialog</a></li><li><a href="module-Frontend.QueryDialogEXP.html">QueryDialogEXP</a></li><li><a href="module-Frontend.QueryDialogEXP_Planeamiento.html">QueryDialogEXP_Planeamiento</a></li><li><a href="module-Frontend.QueryDialogPG2023.html">QueryDialogPG2023</a></li><li><a href="module-Frontend.QueryDialogPGOU98.html">QueryDialogPGOU98</a></li><li><a href="module-Frontend.QueryDialogPRI.html">QueryDialogPRI</a></li><li><a href="module-Frontend.SIGDUMap.html">SIGDUMap</a></li><li><a href="module-Frontend.Sedipualb.html">Sedipualb</a></li><li><a href="module-Frontend.TOC.html">TOC</a></li></ul><h3>Global</h3><ul><li><a href="global.html#mainApp">mainApp</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a> on Sun Nov 26 2023 09:11:52 GMT+0100 (hora estándar de Europa central)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a> on Sat Dec 16 2023 19:01:33 GMT+0100 (hora estándar de Europa central)
 </footer>
 
 <script> prettyPrint(); </script>

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: public/javascripts/visor_urbanismo_2024/classes/Sedipualb.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: public/javascripts/visor_urbanismo_2024/classes/Sedipualb.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Clase para gestionar las consultas y la obtención de información de expedientes en Sedipualb.
+ * @memberof module:Frontend
+ */
+class Sedipualb {
+   /**
+   * Crea una instancia de Sedipualb.
+   */
+  constructor() {
+    this.query_expedientes = [];
+    
+    this.initialize();
+  }
+
+  async initialize() {
+    let query=[];
+    query=await this.getExpedientes("Zt5tWfX3fhtaoI83G2iomv2yB");
+    this.query_expedientes.splice(0, this.query_expedientes.length, ...query);
+    console.log(this.query_expedientes);
+
+    const documentosExp=await this.getDocumentosExpediente("Zt5tWfX3fhtaoI83G2iomv2yB","07040","170167T",-1,"43052971F");
+    console.log(documentosExp);
+
+    const infoDocumento=await this.getInfoDocumento("07040_SIGDU","Zt5tWfX3fhtaoI83G2iomv2yB","07040","1331960");
+    console.log(infoDocumento);
+
+    const carpetasDoc=await this.getCarpetasDocumentos("07040_SIGDU","Zt5tWfX3fhtaoI83G2iomv2yB","07040","170167T",-1)
+    console.log(carpetasDoc.ListarCarpetasV2Result.CarpetaItemV2);
+
+    const materias=await this.getMaterias("07040_SIGDU","Zt5tWfX3fhtaoI83G2iomv2yB","07040");
+    console.log(materias.ListMateriasResult.MateriaInfo);
+
+    const subMaterias=await this.getSubmaterias("07040_SIGDU","Zt5tWfX3fhtaoI83G2iomv2yB","07040","33");
+    console.log(subMaterias.ListSubmateriasResult.SubmateriaInfo);
+
+    const tiposProcedimiento=await this.getTiposProcedimento("07040_SIGDU","Zt5tWfX3fhtaoI83G2iomv2yB","07040","3301");
+    console.log(tiposProcedimiento.ListTiposProcedimientoResult.TipoProcedimientoInfo);
+
+    const subTiposProcedimiento=await this.getSubtiposProcedimento("07040_SIGDU","Zt5tWfX3fhtaoI83G2iomv2yB","07040",219);
+    if(subTiposProcedimiento.ListSubtiposProcedimientoResult!=null)
+      console.log(subTiposProcedimiento.ListSubtiposProcedimientoResult.SubtipoProcedimientoInfo);
+    else
+      console.log(subTiposProcedimiento);
+
+
+  }
+
+  async getInfoDocumento(wsseg_user,clearPassword,pk_entidad,pkDocumento) {
+    const reader = new DataReaderSedipualb();
+    const info_json = await reader.obtenerInfoDocumento(wsseg_user,clearPassword,pk_entidad,pkDocumento);
+    return info_json;
+  } 
+
+  async getMaterias(wsseg_user,clearPassword,idEntidad) {
+    const reader = new DataReaderSedipualb();
+    const info_json = await reader.listMaterias(wsseg_user,clearPassword,idEntidad);
+    return info_json;
+  } 
+
+  async getSubmaterias(wsseg_user,clearPassword,idEntidad,idMateria) {
+    const reader = new DataReaderSedipualb();
+    const info_json = await reader.listSubmaterias(wsseg_user,clearPassword,idEntidad,idMateria);
+    return info_json;
+  } 
+
+  async getTiposProcedimento(wsseg_user,clearPassword,idEntidad,idSubmateria) {
+    const reader = new DataReaderSedipualb();
+    const info_json = await reader.listTiposProcedimiento(wsseg_user,clearPassword,idEntidad,idSubmateria);
+    return info_json;
+  } 
+
+  async getSubtiposProcedimento(wsseg_user,clearPassword,idEntidad,idProcedimiento) {
+    const reader = new DataReaderSedipualb();
+    const info_json = await reader.listSubtiposProcedimiento(wsseg_user,clearPassword,idEntidad,idProcedimiento);
+    return info_json;
+  } 
+
+  async getDocumentosExpediente(clearPassword,pkEntidad,codigoExpediente,pkCarpetaPadre,nifUsuario) {
+    const reader = new DataReaderSedipualb();
+    const info_json = await reader.listarDocumentosV2(clearPassword,pkEntidad,codigoExpediente,pkCarpetaPadre,nifUsuario);
+    return info_json;
+  } 
+
+  async getCarpetasDocumentos(wsseg_user,clearPassword,pkEntidad,codigoExpediente,pkCarpetaPadre) {
+    const reader = new DataReaderSedipualb();
+    const info_json = await reader.listarCarpetasV2(wsseg_user,clearPassword,pkEntidad,codigoExpediente,pkCarpetaPadre);
+    return info_json;
+  } 
+
+  async getExpedientes(clearPassword) {
+    const reader = new DataReaderSedipualb();
+
+    let expedientes = [];
+    let i = 0;
+
+    while (true) {
+      const info_json = await reader.listExpedientes(clearPassword, i);
+
+      if (
+        info_json.ListExpedientesResult &amp;&amp;
+        info_json.ListExpedientesResult.InfoExpedienteV2.length > 0
+      ) {
+        expedientes = expedientes.concat(
+          info_json.ListExpedientesResult.InfoExpedienteV2
+        );
+        i++;
+      } else {
+        break; 
+      }
+    }
+
+    return expedientes;
+  }
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Frontend.html">Frontend</a></li><li><a href="module-Router.html">Router</a></li></ul><h3>Namespaces</h3><ul><li><a href="SedipualbaController.html">SedipualbaController</a></li><li><a href="VisorController.html">VisorController</a></li></ul><h3>Classes</h3><ul><li><a href="module-Frontend.Asistente.html">Asistente</a></li><li><a href="module-Frontend.DataReader.html">DataReader</a></li><li><a href="module-Frontend.DataReaderSedipualb.html">DataReaderSedipualb</a></li><li><a href="module-Frontend.FeatureUrbanistic.html">FeatureUrbanistic</a></li><li><a href="module-Frontend.Form_CATALOGO_PGOU98.html">Form_CATALOGO_PGOU98</a></li><li><a href="module-Frontend.Form_PARAMETROS_CALIFICACIONES_PRI.html">Form_PARAMETROS_CALIFICACIONES_PRI</a></li><li><a href="module-Frontend.Form_PARAMETROS_EQ_PGOU98.html">Form_PARAMETROS_EQ_PGOU98</a></li><li><a href="module-Frontend.Form_PARAMETROS_RSD_PGOU98.html">Form_PARAMETROS_RSD_PGOU98</a></li><li><a href="module-Frontend.Form_PARAMETROS_SEC_PGOU98.html">Form_PARAMETROS_SEC_PGOU98</a></li><li><a href="module-Frontend.Form_PARAMETROS_TER_PGOU98.html">Form_PARAMETROS_TER_PGOU98</a></li><li><a href="module-Frontend.Form_PARAMETROS_VE_PGOU98.html">Form_PARAMETROS_VE_PGOU98</a></li><li><a href="module-Frontend.Form_SISTEMAS_PG2023.html">Form_SISTEMAS_PG2023</a></li><li><a href="module-Frontend.Form_SISTEMAS_PGOU98.html">Form_SISTEMAS_PGOU98</a></li><li><a href="module-Frontend.Form_SISTEMAS_PRI.html">Form_SISTEMAS_PRI</a></li><li><a href="module-Frontend.Form_UNIDAD_EJECUCION_PGOU98.html">Form_UNIDAD_EJECUCION_PGOU98</a></li><li><a href="module-Frontend.Form_UNIDAD_EJECUCION_PRI.html">Form_UNIDAD_EJECUCION_PRI</a></li><li><a href="module-Frontend.I18nHandler.html">I18nHandler</a></li><li><a href="module-Frontend.MapLayer.html">MapLayer</a></li><li><a href="module-Frontend.MapLayers.html">MapLayers</a></li><li><a href="module-Frontend.MapLayersVisor.html">MapLayersVisor</a></li><li><a href="module-Frontend.MapManager.html">MapManager</a></li><li><a href="module-Frontend.MapQuery.html">MapQuery</a></li><li><a href="module-Frontend.NormativaDialog.html">NormativaDialog</a></li><li><a href="module-Frontend.QueryDialog.html">QueryDialog</a></li><li><a href="module-Frontend.QueryDialogEXP.html">QueryDialogEXP</a></li><li><a href="module-Frontend.QueryDialogEXP_Planeamiento.html">QueryDialogEXP_Planeamiento</a></li><li><a href="module-Frontend.QueryDialogPG2023.html">QueryDialogPG2023</a></li><li><a href="module-Frontend.QueryDialogPGOU98.html">QueryDialogPGOU98</a></li><li><a href="module-Frontend.QueryDialogPRI.html">QueryDialogPRI</a></li><li><a href="module-Frontend.SIGDUMap.html">SIGDUMap</a></li><li><a href="module-Frontend.Sedipualb.html">Sedipualb</a></li><li><a href="module-Frontend.TOC.html">TOC</a></li></ul><h3>Global</h3><ul><li><a href="global.html#mainApp">mainApp</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a> on Sat Dec 16 2023 19:01:33 GMT+0100 (hora estándar de Europa central)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

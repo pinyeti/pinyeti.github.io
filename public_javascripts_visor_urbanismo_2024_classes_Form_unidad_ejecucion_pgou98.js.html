@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: public/javascripts/visor_urbanismo_2024/classes/Form_unidad_ejecucion_pgou98.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: public/javascripts/visor_urbanismo_2024/classes/Form_unidad_ejecucion_pgou98.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Clase para gestionar unidades de ejecución del Plan General de Ordenación Urbana de 1998 (PGOU98).
+ * @memberof module:Frontend
+ */
+class Form_UNIDAD_EJECUCION_PGOU98 {
+  /**
+   * Crea una instancia de Form_UNIDAD_EJECUCION_PGOU98.
+   *
+   * @param {object} entity - La entidad que contiene la información.
+   * @param {object} sigduMap - El mapa SIGDU.
+   */
+  constructor(entity, sigduMap) {
+    this.sigduMap=sigduMap;
+    this.map=sigduMap.map;
+    this.geojson = entity.getGeojson();
+    this.feature = entity.getFeature();
+    this.codigo = entity.getFeature().properties.codigo;
+    this.denominacion =
+      entity.getFeature().properties.titulo.toUpperCase() || "-";
+
+    this.cadenaZonaEst = entity.getZonaEstadisticaString();
+    this.cadenaParcelas = entity.getRefcatString();
+    this.cadenaCalles = entity.getCallesString();
+    this.title = entity.title;
+    this.subtitle = entity.subtitle;
+    this.tipoPlan = entity.tipo_plan;
+    this.clase = entity.clase;
+
+    this.area = turf.area(entity.getFeature().geometry);
+    this.area = this.area.toFixed(2) + " m2";
+    this.centroid = turf.centroid(entity.getFeature().geometry);
+    this.coord = turf.getCoord(this.centroid.geometry);
+    this.latlng = L.latLng(this.coord[1], this.coord[0]);
+    this.bbox = turf.bbox(entity.getFeature().geometry);
+
+    this.fillColor = entity.fillColor;
+    this.color = entity.color;
+
+    this.html_IDENTIFICACION = ``;
+    this.html_SISTEMAS_CESION = ``;
+    this.html_SUPERFICIES = ``;
+    this.html_ORDENACION = ``;
+    this.html_ESTANDARES_URBANISTICOS=``;
+    this.html_GESTION=``;
+    this.html_OBSERVACIONES=``;
+    this.html_buttons = ``;
+    this.html_TITULO = ``;
+    this.html_SUPERFICIE_EDIF = ``;
+
+    this.mapManager = null;
+
+    this.setHTML_IDENTIFICACION();
+    this.setHTML_SISTEMAS_CESION();
+    this.setHTML_SUPERFICIES();
+    this.setHTML_ORDENACION();
+    this.setHTML_SUPERFICIE_EDIF();
+    this.setHTML_GESTION();
+    this.setHTML_OBSERVACIONES();
+    this.setHTML_ESTANDARES_URBANISTICOS();
+    this.setHTML_TITLE();
+    this.setHTML_BUTTONS();
+  }
+
+  setHTML_IDENTIFICACION() {
+    this.html_IDENTIFICACION = `
+      &lt;TABLE style='padding:3px;font-size:9px;font-family:Arial;color:#000000;width:100%;height:10px'  BORDER=0  bgcolor="#cfd7e7" BORDERCOLOR="grey" CELLPADDING=3 CELLSPACING=1>
+  
+        &lt;tr align="left" bgcolor="white" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+            &lt;td>&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:black' align="right">CODIGO&lt;/LABEL>&lt;/td>
+            &lt;td>&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;background-color:white;color:#000000;box-shadow: 2px 2px 2px 2px rgba(0, 0, 0, 0.2);border-style: solid;border-width:0.1pt;border-color:black;width:120px;height:15px'>${this.codigo}&lt;/LABEL>&lt;/td>
+        &lt;/tr>
+       
+        &lt;tr align="left" bgcolor="white" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+            &lt;td>&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:black' align="right">DENOMINACIÓN&lt;/LABEL>&lt;/td>
+            &lt;td>&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;background-color:white;color:#000000;box-shadow: 2px 2px 2px 2px rgba(0, 0, 0, 0.2);border-style: solid;border-width:0.1pt;border-color:black;width:120px;height:15px'>${this.denominacion}&lt;/LABEL>&lt;/td>
+        &lt;/tr>
+        &lt;tr align="left" bgcolor="#eaf5ff" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+            &lt;td>&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:black' align="right">ZONA ESTADISTICA&lt;/LABEL>&lt;/td>
+            &lt;td>&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>${this.cadenaZonaEst}&lt;/LABEL>&lt;/td>
+        &lt;/tr>
+        &lt;tr align="left" bgcolor="#eaf5ff" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+            &lt;td>&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:black' align="right">REF. CATASTRAL&lt;/LABEL>&lt;/td>
+            &lt;td>&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>${this.cadenaParcelas}&lt;/LABEL>&lt;/td>
+        &lt;/tr>
+        &lt;tr align="left" bgcolor="#eaf5ff" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+            &lt;td>&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:black' align="right">CALLES&lt;/LABEL>&lt;/td>
+            &lt;td>&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>${this.cadenaCalles}&lt;/LABEL>&lt;/td>
+        &lt;/tr>
+        
+      &lt;/TABLE>`;
+
+    console.log("===============================");
+  }
+
+  setHTML_SISTEMAS_CESION() {
+    this.html_SISTEMAS_CESION = `
+    &lt;TABLE style='padding:3px;font-size:9px;font-family:Arial;color:#000000;width:100%;height:10px'  BORDER=0  bgcolor="#cfd7e7" BORDERCOLOR="grey" CELLPADDING=3 CELLSPACING=1>
+        &lt;tr align="left" bgcolor="white" style='padding:10px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+            &lt;td>&lt;LABEL style='padding:10px;font-size:8pt;font-family:Arial;color:black' align="right">EXPAIS LLIURES&lt;/LABEL>&lt;/td>
+            &lt;td>&lt;LABEL style='padding:10px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.totlibres}&lt;/LABEL>&lt;/td>
+            &lt;td>&lt;LABEL style='padding:10px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.elibres}&lt;/LABEL>&lt;/td>
+        &lt;/tr>
+        &lt;tr align="left" bgcolor="white" style='padding:10px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+            &lt;td>&lt;LABEL style='padding:10px;font-size:8pt;font-family:Arial;color:black' align="right">EQUIPAMENTS&lt;/LABEL>&lt;/td>
+            &lt;td>&lt;LABEL style='padding:10px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.totequipam}&lt;/LABEL>&lt;/td>
+            &lt;td>&lt;LABEL style='padding:10px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.equipam}&lt;/LABEL>&lt;/td>
+        &lt;/tr>
+        &lt;tr align="left" bgcolor="white" style='padding:10px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+            &lt;td>&lt;LABEL style='padding:10px;font-size:8pt;font-family:Arial;color:black' align="right">VIALS I INF.&lt;/LABEL>&lt;/td>
+            &lt;td>&lt;LABEL style='padding:10px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.totvial}&lt;/LABEL>&lt;/td>
+            &lt;td>&lt;LABEL style='padding:10px;font-size:8pt;font-family:Arial;color:#000000;'>-&lt;/LABEL>&lt;/td>
+        &lt;/tr>
+       
+       
+    &lt;/TABLE>`;
+  }
+
+  setHTML_SUPERFICIES() {
+    this.html_SUPERFICIES = `
+        &lt;TABLE style='padding:3px;font-size:9px;font-family:Arial;color:#000000;width:100%;height:10px'  BORDER=0  bgcolor="#cfd7e7" BORDERCOLOR="grey" CELLPADDING=3 CELLSPACING=1>
+            &lt;tr align="left" bgcolor="white" style='padding:10px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+                &lt;td>&lt;LABEL style='padding:10px;font-size:8pt;font-family:Arial;color:black' align="right">SUP. SÓL NO LUCRATIU&lt;/LABEL>&lt;/td>
+                &lt;td>&lt;LABEL style='padding:10px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.totcesion}&lt;/LABEL>&lt;/td>
+               
+            &lt;/tr>
+            &lt;tr align="left" bgcolor="white" style='padding:10px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+                &lt;td>&lt;LABEL style='padding:10px;font-size:8pt;font-family:Arial;color:black' align="right">SUP. SÓL LUCRATIU&lt;/LABEL>&lt;/td>
+                &lt;td>&lt;LABEL style='padding:10px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.totlucrat}&lt;/LABEL>&lt;/td>
+               
+            &lt;/tr>
+            &lt;tr align="left" bgcolor="white" style='padding:10px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+                &lt;td>&lt;LABEL style='padding:10px;font-size:8pt;font-family:Arial;color:black' align="right">TOTAL&lt;/LABEL>&lt;/td>
+                &lt;td>&lt;LABEL style='padding:10px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.totue}&lt;/LABEL>&lt;/td>
+                 
+            &lt;/tr>       
+           
+        &lt;/TABLE>`;
+  }
+
+  setHTML_ORDENACION() {
+    this.html_ORDENACION = `
+      &lt;TABLE style='padding:3px;font-size:9px;font-family:Arial;color:#000000;width:100%;height:10px'  BORDER=0  bgcolor="#cfd7e7" BORDERCOLOR="grey" CELLPADDING=3 CELLSPACING=1>
+              
+      &lt;tr align="left" bgcolor="#eaf5ff" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+          &lt;td bgcolor="grey">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:white' align="right">USOS&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="grey">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:white' align="right">TIPOLOGIA&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="grey">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:white' align="right">ORDENANÇA&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="grey">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:white' align="right">COEF. EDIFICABILITAT MITJA&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="grey">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:white' align="right">SUP. SÒL&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="grey">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:white' align="right">EDIFICABILITAT&lt;/LABEL>&lt;/td>
+      &lt;/tr>
+      &lt;tr align="left" bgcolor="#eaf5ff" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+          &lt;td rowspan=2 bgcolor="#eaf5ff">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:black' align="right">RESID. UNIFAMILIAR&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="#eaf5ff">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:black' align="right">CONTINUA&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="white">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.orden_ruc}&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="white">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.edif_ruc}&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="white">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.supsol_ruc}&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="white">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.suptot_ruc}&lt;/LABEL>&lt;/td>
+      &lt;/tr>
+      &lt;tr align="left" bgcolor="#eaf5ff" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+        &lt;!-- &lt;td bgcolor="#eaf5ff">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:black' align="right">RESID. UNIFAMILIAR&lt;/LABEL>&lt;/td> -->
+          &lt;td bgcolor="#eaf5ff">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:black' align="right">AILLADA&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="white">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.orden_rua}&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="white">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.edif_rua}&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="white">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.supsol_rua}&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="white">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.suptot_rua}&lt;/LABEL>&lt;/td>
+      &lt;/tr>
+      &lt;tr align="left" bgcolor="#eaf5ff" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+          &lt;td rowspan=3 bgcolor="#eaf5ff">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:black' align="right">RESID. PLURIFAMILIAR&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="#eaf5ff">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:black' align="right">CONTINUA&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="white">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.orden_rpc}&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="white">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.edif_rpc}&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="white">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.supsol_rpc}&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="white">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.suptot_rpc}&lt;/LABEL>&lt;/td>
+      &lt;/tr>
+          &lt;tr align="left" bgcolor="#eaf5ff" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>          
+          &lt;td bgcolor="#eaf5ff">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:black' align="right">AILLADA&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="white">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.orden_rpa}&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="white">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.edif_rpa}&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="white">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.supsol_rpa}&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="white">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.suptot_rpa}&lt;/LABEL>&lt;/td>
+      &lt;/tr>
+      &lt;tr align="left" bgcolor="#eaf5ff" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+          
+          &lt;td bgcolor="#eaf5ff">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:black' align="right">VOL. ESP.&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="white">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.orden_vol}&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="white">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.edif_vol}&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="white">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.supsol_vol}&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="white">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.suptot_vol}&lt;/LABEL>&lt;/td>
+      &lt;/tr>
+      &lt;tr align="left" bgcolor="#eaf5ff" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+          &lt;td bgcolor="#eaf5ff">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:black' align="right">SECUNDARI&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="#eaf5ff">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:black' align="right">TOTES&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="white">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.orden_sec}&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="white">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.edif_sec}&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="white">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.supsol_sec}&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="white">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.suptot_sec}&lt;/LABEL>&lt;/td>
+      &lt;/tr>
+      &lt;tr align="left" bgcolor="#eaf5ff" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+          &lt;td bgcolor="#eaf5ff">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:black' align="right">TERCIARI&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="#eaf5ff">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:black' align="right">TOTES&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="white">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.orden_ter}&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="white">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.edif_ter}&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="white">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.supsol_ter}&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="white">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.suptot_ter}&lt;/LABEL>&lt;/td>
+      &lt;/tr>
+      &lt;tr align="left" bgcolor="#eaf5ff" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+          &lt;td bgcolor="#eaf5ff">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:black' align="right">EQUIPAMENTS&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="#eaf5ff">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:black' align="right">TOTES&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="white">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.orden_eqp}&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="white">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.edif_eqp}&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="white">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.supsol_eqp}&lt;/LABEL>&lt;/td>
+          &lt;td bgcolor="white">&lt;LABEL style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.suptot_eqp}&lt;/LABEL>&lt;/td>
+      &lt;/tr>
+              
+    &lt;/TABLE>`;
+  }
+
+  setHTML_SUPERFICIE_EDIF(){
+    this.html_SUPERFICIE_EDIF=`
+    &lt;TABLE style='padding:3px;font-size:9px;font-family:Arial;color:#000000;width:100%;height:10px'  BORDER=0  bgcolor="#cfd7e7" BORDERCOLOR="grey" CELLPADDING=3 CELLSPACING=1>
+        &lt;tr align="left" bgcolor="white" style='padding:10px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+            &lt;td>&lt;LABEL style='padding:10px;font-size:8pt;font-family:Arial;color:black' align="right">EDIFICABILITAT MAX. (m2t)&lt;/LABEL>&lt;/td>
+            &lt;td>&lt;LABEL style='padding:10px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.aprofitn}&lt;/LABEL>&lt;/td>
+            
+        &lt;/tr>
+        &lt;tr align="left" bgcolor="white" style='padding:10px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+            &lt;td>&lt;LABEL style='padding:10px;font-size:8pt;font-family:Arial;color:black' align="right">COEF. EDIFICABILITAT MAX. (m2t/m2)&lt;/LABEL>&lt;/td>
+            &lt;td>&lt;LABEL style='padding:10px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.edifglob_1}&lt;/LABEL>&lt;/td>
+            
+        &lt;/tr>
+        
+        
+    &lt;/TABLE>`; 
+  }
+
+  setHTML_ESTANDARES_URBANISTICOS(){
+    this.html_ESTANDARES_URBANISTICOS=`
+    &lt;TABLE style='padding:3px;font-size:9px;font-family:Arial;color:#000000;width:100%;height:10px'  BORDER=0  bgcolor="#cfd7e7" BORDERCOLOR="grey" CELLPADDING=3 CELLSPACING=1>
+        &lt;tr align="left" bgcolor="white" style='padding:10px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+            &lt;td>&lt;LABEL style='padding:10px;font-size:8pt;font-family:Arial;color:black' align="right">DENSITAT MAX. VIVENDES (viv/ha)&lt;/LABEL>&lt;/td>
+            &lt;td>&lt;LABEL style='padding:10px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.densvivm_1}&lt;/LABEL>&lt;/td>
+            
+        &lt;/tr>
+        &lt;tr align="left" bgcolor="white" style='padding:10px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+            &lt;td>&lt;LABEL style='padding:10px;font-size:8pt;font-family:Arial;color:black' align="right">DENSITAT POBLACIÓ MAX. (hab/ha)&lt;/LABEL>&lt;/td>
+            &lt;td>&lt;LABEL style='padding:10px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.denspobm_1}&lt;/LABEL>&lt;/td>
+            
+        &lt;/tr>
+        &lt;tr align="left" bgcolor="white" style='padding:10px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+            &lt;td>&lt;LABEL style='padding:10px;font-size:8pt;font-family:Arial;color:black' align="right">NUM. VIV. MAX. (viv)&lt;/LABEL>&lt;/td>
+            &lt;td>&lt;LABEL style='padding:10px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.numvivn}&lt;/LABEL>&lt;/td>
+            
+        &lt;/tr>
+        &lt;tr align="left" bgcolor="white" style='padding:10px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+            &lt;td>&lt;LABEL style='padding:10px;font-size:8pt;font-family:Arial;color:black' align="right">NUM. HAB. MAX. (hab)&lt;/LABEL>&lt;/td>
+            &lt;td>&lt;LABEL style='padding:10px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.numhabmaxn}&lt;/LABEL>&lt;/td>
+            
+        &lt;/tr>
+        
+        
+    &lt;/TABLE>`; 
+  }
+
+  setHTML_GESTION(){
+    this.html_GESTION=`
+    &lt;TABLE style='padding:3px;font-size:9px;font-family:Arial;color:#000000;width:100%;height:10px'  BORDER=0  bgcolor="#cfd7e7" BORDERCOLOR="grey" CELLPADDING=3 CELLSPACING=1>
+        &lt;tr align="left" bgcolor="white" style='padding:10px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+            &lt;td>&lt;LABEL style='padding:10px;font-size:8pt;font-family:Arial;color:black' align="right">PALNEJAMENT APROVAT&lt;/LABEL>&lt;/td>
+            &lt;td>&lt;LABEL style='padding:10px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.plana_apro}&lt;/LABEL>&lt;/td>
+            
+        &lt;/tr>
+        &lt;tr align="left" bgcolor="white" style='padding:10px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+            &lt;td>&lt;LABEL style='padding:10px;font-size:8pt;font-family:Arial;color:black' align="right">PLANEJAMENT A DESENVOLUPAR&lt;/LABEL>&lt;/td>
+            &lt;td>&lt;LABEL style='padding:10px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.plana_a_d}&lt;/LABEL>&lt;/td>
+            
+        &lt;/tr>
+        &lt;tr align="left" bgcolor="white" style='padding:10px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+            &lt;td>&lt;LABEL style='padding:10px;font-size:8pt;font-family:Arial;color:black' align="right">SISTEMA D' ACTUACIÓ&lt;/LABEL>&lt;/td>
+            &lt;td>&lt;LABEL style='padding:10px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.sistema_ac}&lt;/LABEL>&lt;/td>
+            
+        &lt;/tr>
+        &lt;tr align="left" bgcolor="white" style='padding:10px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+            &lt;td>&lt;LABEL style='padding:10px;font-size:8pt;font-family:Arial;color:black' align="right">PLA D' ETAPES&lt;/LABEL>&lt;/td>
+            &lt;td>&lt;LABEL style='padding:10px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.plan_etapa}&lt;/LABEL>&lt;/td>
+            
+        &lt;/tr>
+        
+        
+    &lt;/TABLE>`; 
+  }
+
+  setHTML_OBSERVACIONES(){
+    this.html_OBSERVACIONES=`
+        &lt;TABLE style='padding:3px;font-size:9px;font-family:Arial;color:#000000;width:100%;height:10px'  BORDER=0  bgcolor="#cfd7e7" BORDERCOLOR="grey" CELLPADDING=3 CELLSPACING=1>
+            &lt;tr align="left" bgcolor="white" style='padding:10px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+               
+                &lt;td style='text-align: justify;padding:10px;font-size:8pt;font-family:Arial;color:#000000;'>${this.feature.properties.observacio.replace(
+                  /\n/g,
+                  "&lt;br>"
+                )}&lt;/LABEL>&lt;/td>
+               
+            &lt;/tr>
+           
+           
+           
+        &lt;/TABLE>`; 
+  }
+
+  setHTML_BUTTONS() {
+    this.html_buttons = `&lt;button id="buttons" class="accordion">IDENTIFICACIÓN&lt;/button>
+      &lt;div class="panelIDENTIF id="panelIDENTIF">
+        &lt;BR>
+        ${this.html_IDENTIFICACION}
+        &lt;div id='map2'>&lt;/div>
+        &lt;BR>      
+      &lt;/div>
+      &lt;button id="buttons" class="accordion">SISTEMAS LOCALES DE CESIÓN&lt;/button>
+      &lt;div class="panelCESION id="panelCESION">
+        &lt;BR>
+        ${this.html_SISTEMAS_CESION}
+        &lt;BR>      
+      &lt;/div>
+      &lt;button id="buttons" class="accordion">SUPERFICIES&lt;/button>
+      &lt;div class="panelSUPERFICIES id="panelSUPERFCIES">
+        &lt;BR>
+        ${this.html_SUPERFICIES}
+        &lt;BR>      
+      &lt;/div>
+      &lt;button id="buttons" class="accordion">ORDENACION&lt;/button>
+      &lt;div class="panelORDENACION id="panelORDENACION">
+        &lt;BR>
+        ${this.html_ORDENACION}
+        &lt;BR>      
+      &lt;/div>
+      &lt;button id="buttons" class="accordion">SUPERFICIE EDIFICABLE&lt;/button>
+      &lt;div class="panelSUPERFICIE_EDIF id="panelSUPERFICIE_EDIF">
+        &lt;BR>
+        ${this.html_SUPERFICIE_EDIF}
+        &lt;BR>      
+      &lt;/div>
+      &lt;button id="buttons" class="accordion">ESTANDARES URBANISTICOS&lt;/button>
+      &lt;div class="panelESTANDARES_URBANISTICOS id="panelESTANDARES_URBANISTICOS">
+        &lt;BR>
+        ${this.html_ESTANDARES_URBANISTICOS}
+        &lt;BR>      
+      &lt;/div>
+      &lt;button id="buttons" class="accordion">GESTIÓN, PROGRAMACIÓN Y PLANEAMIENTO&lt;/button>
+      &lt;div class="panelGESTION id="panelGESTION">
+        &lt;BR>
+        ${this.html_GESTION}
+        &lt;BR>      
+      &lt;/div>
+      &lt;button id="buttons" class="accordion">OBSERVACIONES&lt;/button>
+      &lt;div class="panelOBSERVACIONES id="panelOBSERVACIONES">
+        &lt;BR>
+        ${this.html_OBSERVACIONES}
+        &lt;BR>      
+      &lt;/div>
+      `;
+  }
+
+  async printForm() {
+    console.log("print ficha");
+    const ventana = window.open(
+      "",
+      "",
+      "top=100,left=100,height=600,width=800"
+    );
+    ventana.hidden = true;
+    ventana.document.write(
+      `&lt;title>sistemas_${this.clase}_${this.codigo}&lt;/title>`
+    );
+    ventana.document.innerHTML = "";
+
+    // identificacion=`&lt;DIV style="padding:50px">${html_IDENTIFICACION}&lt;/DIV>`
+
+    ventana.document.write("&lt;BR>");
+    ventana.document.write(this.html_TITULO);
+    ventana.document.write("&lt;BR>&lt;BR>");
+    const tit_identificacion = `&lt;DIV style='padding:3px;font-size:8.5pt;font-family:Arial Black;background-color:rgba(85, 140, 212, 1);color:white;border-style: solid;border-width:0.1pt;border-color:RGB(12,1,73);width:99%;height:14px;'>1. IDENTIFICACIÓN&lt;/DIV>`;
+    ventana.document.write(tit_identificacion);
+    ventana.document.write(this.html_IDENTIFICACION);
+
+    ventana.document.write(
+      '&lt;div  id="image" style="width:100%;text-align: center"> &lt;/div>'
+    );
+
+    const tit_caracteristicas = `&lt;DIV style='padding:3px;font-size:8.5pt;font-family:Arial Black;background-color:rgba(85, 140, 212, 1);color:white;border-style: solid;border-width:0.1pt;border-color:RGB(12,1,73);width:99%;height:14px;'>2. SISTEMAS LOCALES DE CESIÓN&lt;/DIV>`;
+    ventana.document.write(tit_sistemas_cesion);
+    ventana.document.write(this.html_SISTEMAS_CESION);
+
+    const tit_superficies = `&lt;DIV style='padding:3px;font-size:8.5pt;font-family:Arial Black;background-color:rgba(85, 140, 212, 1);color:white;border-style: solid;border-width:0.1pt;border-color:RGB(12,1,73);width:99%;height:14px;'>3. SUPERFICIES&lt;/DIV>`;
+    ventana.document.write(tit_superficies);
+    ventana.document.write(this.html_SUPERFICIES);
+
+    await leafletImage(this.mapManager.map2, async function (err, canvas) {
+      // Convierte el canvas en un blob
+
+      canvas.toBlob(function (blob) {
+        // 'blob' contiene la imagen en formato Blob
+        // Puedes manipularlo o mostrarlo como desees
+        var image = new Image();
+        image.src = URL.createObjectURL(blob);
+
+        var imageContainer = ventana.document.getElementById("image");
+        image.width = 700;
+        image.height = 400;
+
+        // Agrega la imagen al contenedor en el DOM
+        imageContainer.appendChild(canvas);
+
+        ventana.print();
+
+        // Ahora puedes acceder a la imagen a través de 'image.src'
+        // Puedes agregar 'image' al DOM o hacer cualquier otra cosa que desees
+      });
+
+      //ventana.close();
+    });
+  }
+
+  setHTML_TITLE() {
+    this.html_TITULO = ` &lt;LABEL style='padding:5px;font-size:8.5pt;font-family:Arial Black;background-color:#fdfde0;color:#1a4d1a;box-shadow: 2px 2px 2px 2px rgba(0, 0, 0, 0.2);border-style: solid;border-width:0.1pt;border-color:black;width:380px;height:20px;'>FICHA DE ${this.title}  (${this.tipoPlan})&lt;/LABEL>`;
+  }
+
+  async createForm() {
+    this.sigduMap.map.spin(true);
+
+    //console.log(this.html_IDENTIFICACION);
+    console.log(this.html_buttons);
+
+    const urlG =
+      "http://maps.google.com/?cbll=" +
+      this.coord[1] +
+      "," +
+      this.coord[0] +
+      "&amp;cbp=12,90,0,0,5&amp;layer=c";
+
+    let html = "";
+    html =
+      html +
+      `&lt;div style='overflow: auto;padding:20px;background-color:#f2f2f2;border-style: solid;border-width:0pt;border-color:black;box-shadow: 3px 3px 3px 3px rgba(0, 0, 0, 0.2);position:absolute;width:90%;height:90%;top:10px;left:10px'>
+        ${this.html_TITULO}
+        &lt;button  id="printFichaUE" style="padding-top:4px;padding-bottom:4px;" class="ui-button ui-widget ui-corner-all" title="Imprimir Ficha">&lt;i class="fa fa-print">&lt;/i>&lt;/button> 
+        &lt;a target="_blank" title="Ir a Street view" href="${urlG}}">&lt;img src="${window.location.protocol}//${window.location.host}/opg/images/streetview.png">&lt;/a>
+        &lt;BR>
+        &lt;BR>
+        ${this.html_buttons}
+        &lt;BR>   
+      &lt;/div>`;
+
+    const elem = document.getElementById("userinfo");
+    elem.innerHTML = html;
+
+    const self = this; // Almacena una referencia a 'this'
+
+    document
+      .getElementById("printFichaUE")
+      .addEventListener("click", function () {
+        self.printForm();
+      });
+
+    const acc = document.getElementsByClassName("accordion");
+    var i;
+
+    for (i = 0; i &lt; acc.length; i++) {
+      acc[i].classList.toggle("activeB");
+      var panel = acc[i].nextElementSibling;
+      panel.style.display = "block";
+      acc[i].addEventListener("click", function () {
+        this.classList.toggle("activeB");
+        // console.log(this);
+        var panel = this.nextElementSibling;
+        if (panel.style.display === "block") {
+          panel.style.display = "none";
+        } else {
+          panel.style.display = "block";
+        }
+      });
+    }
+
+    if (this.sigduMap.sidebarStatus == "cerrado") {
+      const self = this; // Almacena una referencia a 'this'
+      window.setTimeout(function () {
+        this.mapManager = new MapManager("map2");
+        this.mapManager.createElement(self.geojson, self.color, self.fillColor);
+      }, 500);
+    } else {
+      this.mapManager = new MapManager("map2");
+      this.mapManager.createElement(self.geojson, self.color, self.fillColor);
+    }
+
+    this.sigduMap.sidebar.open("userinfo");
+    this.sigduMap.map.spin(false);
+  }
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Frontend.html">Frontend</a></li><li><a href="module-Router.html">Router</a></li></ul><h3>Namespaces</h3><ul><li><a href="SedipualbaController.html">SedipualbaController</a></li><li><a href="VisorController.html">VisorController</a></li></ul><h3>Classes</h3><ul><li><a href="module-Frontend.Asistente.html">Asistente</a></li><li><a href="module-Frontend.DataReader.html">DataReader</a></li><li><a href="module-Frontend.DataReaderSedipualb.html">DataReaderSedipualb</a></li><li><a href="module-Frontend.FeatureUrbanistic.html">FeatureUrbanistic</a></li><li><a href="module-Frontend.Form_CATALOGO_PGOU98.html">Form_CATALOGO_PGOU98</a></li><li><a href="module-Frontend.Form_PARAMETROS_CALIFICACIONES_PRI.html">Form_PARAMETROS_CALIFICACIONES_PRI</a></li><li><a href="module-Frontend.Form_PARAMETROS_EQ_PGOU98.html">Form_PARAMETROS_EQ_PGOU98</a></li><li><a href="module-Frontend.Form_PARAMETROS_RSD_PGOU98.html">Form_PARAMETROS_RSD_PGOU98</a></li><li><a href="module-Frontend.Form_PARAMETROS_SEC_PGOU98.html">Form_PARAMETROS_SEC_PGOU98</a></li><li><a href="module-Frontend.Form_PARAMETROS_TER_PGOU98.html">Form_PARAMETROS_TER_PGOU98</a></li><li><a href="module-Frontend.Form_PARAMETROS_VE_PGOU98.html">Form_PARAMETROS_VE_PGOU98</a></li><li><a href="module-Frontend.Form_SISTEMAS_PG2023.html">Form_SISTEMAS_PG2023</a></li><li><a href="module-Frontend.Form_SISTEMAS_PGOU98.html">Form_SISTEMAS_PGOU98</a></li><li><a href="module-Frontend.Form_SISTEMAS_PRI.html">Form_SISTEMAS_PRI</a></li><li><a href="module-Frontend.Form_UNIDAD_EJECUCION_PGOU98.html">Form_UNIDAD_EJECUCION_PGOU98</a></li><li><a href="module-Frontend.Form_UNIDAD_EJECUCION_PRI.html">Form_UNIDAD_EJECUCION_PRI</a></li><li><a href="module-Frontend.I18nHandler.html">I18nHandler</a></li><li><a href="module-Frontend.MapLayer.html">MapLayer</a></li><li><a href="module-Frontend.MapLayers.html">MapLayers</a></li><li><a href="module-Frontend.MapLayersVisor.html">MapLayersVisor</a></li><li><a href="module-Frontend.MapManager.html">MapManager</a></li><li><a href="module-Frontend.MapQuery.html">MapQuery</a></li><li><a href="module-Frontend.NormativaDialog.html">NormativaDialog</a></li><li><a href="module-Frontend.QueryDialog.html">QueryDialog</a></li><li><a href="module-Frontend.QueryDialogEXP.html">QueryDialogEXP</a></li><li><a href="module-Frontend.QueryDialogEXP_Planeamiento.html">QueryDialogEXP_Planeamiento</a></li><li><a href="module-Frontend.QueryDialogPG2023.html">QueryDialogPG2023</a></li><li><a href="module-Frontend.QueryDialogPGOU98.html">QueryDialogPGOU98</a></li><li><a href="module-Frontend.QueryDialogPRI.html">QueryDialogPRI</a></li><li><a href="module-Frontend.SIGDUMap.html">SIGDUMap</a></li><li><a href="module-Frontend.Sedipualb.html">Sedipualb</a></li><li><a href="module-Frontend.TOC.html">TOC</a></li></ul><h3>Global</h3><ul><li><a href="global.html#mainApp">mainApp</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a> on Sat Dec 16 2023 19:01:33 GMT+0100 (hora estándar de Europa central)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: public/javascripts/visor_urbanismo_2024/classes/NormativaDialog.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: public/javascripts/visor_urbanismo_2024/classes/NormativaDialog.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Clase para gestionar el diálogo de normativa.
+ * @memberof module:Frontend
+ */
+class NormativaDialog {
+  /**
+   * Crea una instancia de NormativaDialog.
+   * 
+   * @param {Element} table - La tabla que se utilizará en el diálogo.
+   * @param {string} fid - El identificador de característica (fid).
+   * @param {SigduMap} sigduMap - La instancia del mapa SigduMap.
+   */
+  constructor(table, fid, sigduMap) {
+    this.sigduMap = sigduMap;
+    this.table = table;
+    this.fid = fid;
+    this.arrayArticulosPGOU98 = [];
+    this.arrayArticulosPRI = [];
+
+		this.htmTreeArticulos_normasPG2023 = ``;
+    this.htmTreeArticulos_normasPGOU98 = ``;
+    this.htmTreeArticulos_normasPRI = ``;
+
+    this.primerFeatureHigh = null;
+
+    this.htmlTabsArticulos = ``;
+  }
+
+  async initialize() {
+		this.arrayArticulosPG2023 = await this.setArticulos("v_articulos_pg2023");
+    this.arrayArticulosPGOU98 = await this.setArticulos("articulos_vigente");
+    this.arrayArticulosPRI = await this.setArticulos("articulos_pri");
+  }
+
+  async setArticulos(tableArticulo) {
+    const reader = new DataReader();
+    const arrayArticulos = [];
+
+    try {
+      let info_geojson = await reader.readDataFeature(
+        tableArticulo,
+        "tabla='" + this.table + "'"
+      );
+      console.log(info_geojson);
+
+      if (info_geojson.features)
+        for (const feature of info_geojson.features) {
+          let filtroSQL = "";
+          if (
+            feature.properties.filtro != "" &amp;&amp;
+            feature.properties.filtro != null
+          )
+            filtroSQL =
+              "fid=" + this.fid + " and (" + feature.properties.filtro + ")";
+          else filtroSQL = "fid=" + this.fid;
+
+          const geojson_articulos = await reader.readDataFeature(
+            this.table,
+            filtroSQL
+          );
+
+          if (geojson_articulos.features) {
+            arrayArticulos.push(feature);
+          }
+        }
+      console.log(arrayArticulos);
+    } catch (error) {
+      console.error("Error initializing:", error);
+    }
+
+    return arrayArticulos;
+  }
+
+  async show() {
+		if (this.arrayArticulosPG2023.length > 0) {
+      this.htmTreeArticulos_normasPG2023 = await this.create_articulos_normas(
+        this.arrayArticulosPG2023,"PG2023"
+      );
+			console.log(this.htmTreeArticulos_normasPG2023);
+      this.primerFeatureHigh = this.arrayArticulosPG2023[0];
+      var find = false;
+      for (var n = 0; n &lt; this.arrayArticulosPG2023.length &amp;&amp; !find; n++) {
+        const feature = this.arrayArticulosPG2023[n];
+
+        if (feature.properties.relevancia == "High") {
+          find = true;
+          this.primerFeatureHigh = feature;
+        }
+      }
+    }
+    if (this.arrayArticulosPGOU98.length > 0) {
+      this.htmTreeArticulos_normasPGOU98 = await this.create_articulos_normas(
+        this.arrayArticulosPGOU98,"PGOU98"
+      );
+			console.log(this.htmTreeArticulos_normasPGOU98);
+      this.primerFeatureHigh = this.arrayArticulosPGOU98[0];
+      var find = false;
+      for (var n = 0; n &lt; this.arrayArticulosPGOU98.length &amp;&amp; !find; n++) {
+        const feature = this.arrayArticulosPGOU98[n];
+
+        if (feature.properties.relevancia == "High") {
+          find = true;
+          this.primerFeatureHigh = feature;
+        }
+      }
+    }
+    if (this.arrayArticulosPRI.length > 0) {
+      this.htmTreeArticulos_normasPRI = await this.create_articulos_normas(
+        this.arrayArticulosPRI,"PRI"
+      );
+      this.primerFeatureHigh = this.arrayArticulosPRI[0];
+      var find = false;
+      for (var n = 0; n &lt; this.arrayArticulosPRI.length &amp;&amp; !find; n++) {
+        const feature = this.arrayArticulosPRI[n];
+
+        if (feature.properties.relevancia == "High") {
+          find = true;
+          this.primerFeatureHigh = feature;
+        }
+      }
+    }
+		await this.createTabs()
+    await this.create_content();
+  }
+
+  async createTabs() {
+    //---------- tabs normes
+
+    var tabs = $(function () {
+      $("#tabsArticulos").tabs({
+        activate: function (event, ui) {
+          //
+        },
+      });
+    });
+
+		let htmTabPG2023 = "";
+    let htmTabPG2023_content = "";
+    let htmTabPGOU98 = "";
+    let htmTabPGOU98_content = "";
+    let htmTabPRI = "";
+    let htmTabPRI_content = "";
+
+		if (this.htmTreeArticulos_normasPG2023 != "") {
+      htmTabPG2023 = `&lt;li>&lt;a href="#tabPG2023">PLAN GENERAL 2023&lt;/a>&lt;/li>`;
+      htmTabPG2023_content = `&lt;div style='overflow: auto;padding-top: 0px; padding-right: 0px; padding-bottom: 0px; padding-left: 0px' id="tabPG2023">
+				&lt;div style='padding:3px;background-color:#fdfde0;border-style: solid;border-width:1pt;border-color:#78c4f0'>
+						&lt;label class="icon">&lt;i class="fa fa-search">&lt;/i>&lt;/label>
+						&lt;input id="search-art_PGOU98" class="search-art_PG2023" />   
+						&lt;button  style="padding-top:4px;padding-bottom:4px;" class="ui-button ui-widget ui-corner-all" title="Imprimeix norma seleccionada" OnClick="printNormaSelect()">&lt;i class="fa fa-print">&lt;/i>&lt;/button>
+				&lt;/div>
+				${this.htmTreeArticulos_normasPG2023}
+			&lt;/div>`;
+    }
+
+    if (this.htmTreeArticulos_normasPGOU98 != "") {
+      htmTabPGOU98 = `&lt;li>&lt;a href="#tabPGOU98">POD (PGOU98)&lt;/a>&lt;/li>`;
+      htmTabPGOU98_content = `&lt;div style='overflow: auto;padding-top: 0px; padding-right: 0px; padding-bottom: 0px; padding-left: 0px' id="tabPGOU98">
+				&lt;div style='padding:3px;background-color:#fdfde0;border-style: solid;border-width:1pt;border-color:#78c4f0'>
+						&lt;label class="icon">&lt;i class="fa fa-search">&lt;/i>&lt;/label>
+						&lt;input id="search-art_PGOU98" class="search-art_PGOU98" />   
+						&lt;button  style="padding-top:4px;padding-bottom:4px;" class="ui-button ui-widget ui-corner-all" title="Imprimeix norma seleccionada" OnClick="printNormaSelect()">&lt;i class="fa fa-print">&lt;/i>&lt;/button>
+				&lt;/div>
+				${this.htmTreeArticulos_normasPGOU98}
+			&lt;/div>`;
+    }
+
+    if (this.htmTreeArticulos_normasPRI != "") {
+			htmTabPRI = `&lt;li>&lt;a href="#tabPRI">POD (PRI)&lt;/a>&lt;/li>`;
+      htmTabPRI_content = `&lt;div style='overflow: auto;padding-top: 0px; padding-right: 0px; padding-bottom: 0px; padding-left: 0px' id="tabPRI">
+				&lt;div style='padding:3px;background-color:#fdfde0;border-style: solid;border-width:1pt;border-color:#78c4f0'>
+						&lt;label class="icon">&lt;i class="fa fa-search">&lt;/i>&lt;/label>
+						&lt;input id="search-art_PRI" class="search-art_PRI" />   
+						&lt;button  style="padding-top:4px;padding-bottom:4px;" class="ui-button ui-widget ui-corner-all" title="Imprimeix norma seleccionada" OnClick="printNormaSelect()">&lt;i class="fa fa-print">&lt;/i>&lt;/button>
+				&lt;/div>
+				${this.htmTreeArticulos_normasPRI}
+			&lt;/div>`;
+    }
+
+		this.htmlTabsArticulos=`&lt;div  style='margin-top: -20px;margin-bottom: -20px; height:350px;padding-top: 0px; padding-right: 0px; padding-bottom: 0px; padding-left: 0px;font-size:8pt' id="tabsArticulos">
+				&lt;ul>
+					${htmTabPG2023}
+					${htmTabPGOU98}
+					${htmTabPRI}
+				&lt;/ul>
+				${htmTabPG2023_content}
+				${htmTabPGOU98_content}
+				${htmTabPRI_content}
+
+		&lt;/div>
+		`;
+
+
+  }
+
+  async create_content() {
+    var strDivArt =
+      `&lt;div  id="divContentArt">` +
+      this.primerFeatureHigh.properties.contenido +
+      `&lt;/div>\n`;
+
+    const html_buttons = `
+			&lt;button class="accordion">ARTICLES ASSOCIATS&lt;/button>
+					&lt;div  class="panel" style='padding-top: 0px; padding-right: 0px; padding-bottom: 0px; padding-left: 0px;height:350px'>
+						
+							&lt;BR>
+							${this.htmlTabsArticulos}
+							&lt;BR>
+
+					&lt;/div>
+
+			&lt;button id="tituloArt" class="accordion">${this.primerFeatureHigh.properties.titulo}&lt;/button>
+					&lt;div class="panelContertArticulo">
+							&lt;BR>
+							${strDivArt}
+							&lt;BR>       
+					&lt;/div>`;
+
+    // Diseño
+    let html = "";
+    html =
+      html +
+      `&lt;div style='overflow: auto;padding:20px;background-color:#f2f2f2;border-style: solid;border-width:0pt;border-color:black;box-shadow: 3px 3px 3px 3px rgba(0, 0, 0, 0.2);position:absolute;width:90%;height:90%;top:10px;left:10px'>
+
+			${html_buttons}
+
+			&lt;BR>   
+			&lt;/div>`;
+
+    var elem = document.getElementById("userinfo");
+    elem.innerHTML = html;
+
+    // ens add
+
+    this.sigduMap.sidebar.open("userinfo");
+
+    var acc = document.getElementsByClassName("accordion");
+    var i;
+
+    for (i = 0; i &lt; acc.length; i++) {
+      acc[i].classList.toggle("activeB");
+      var panel = acc[i].nextElementSibling;
+      panel.style.display = "block";
+      acc[i].addEventListener("click", function () {
+        this.classList.toggle("activeB");
+        // console.log(this);
+        var panel = this.nextElementSibling;
+        if (panel.style.display === "block") {
+          panel.style.display = "none";
+        } else {
+          panel.style.display = "block";
+        }
+      });
+    }
+  }
+
+  async create_articulos_normas(arrayArticulos,tipoNorma) {
+    //const self = this;
+    $(function () {
+      $(`#jstree_articulos_normas_${tipoNorma}`).jstree({
+        core: {
+          data: [
+            {
+              id: "root",
+              text: `NORMATIVA (${tipoNorma})`,
+              state: {
+                opened: true,
+                selected: true,
+                //'checked' : true
+              },
+            },
+          ],
+          check_callback: true,
+        },
+
+        plugins: ["search"],
+        search: {
+          show_only_matches_children: true,
+          show_only_matches: true,
+        },
+      });
+
+      var to = false;
+      $(`#search-art_${tipoNorma}`).keyup(function () {
+        if (to) {
+          clearTimeout(to);
+        }
+        to = setTimeout(function () {
+          var v = $(`#search-art_${tipoNorma}`).val();
+          $(`#jstree_articulos_normas_${tipoNorma}`).jstree(true).search(v);
+        }, 250);
+      });
+
+      $(`#jstree_articulos_normas_${tipoNorma}`).on(
+        "select_node.jstree",
+        function (e, data) {
+          var elem = document.getElementById("divContentArt");
+          elem.innerHTML = data.node.data;
+          var elem = document.getElementById("tituloArt");
+          elem.innerHTML = data.node.text;
+        }
+      );
+
+      $(`#jstree_articulos_normas_${tipoNorma}`).bind(
+        "loaded.jstree",
+        function (event, data) {
+          $(`#jstree_articulos_normas_${tipoNorma}`).jstree().get_selected();
+          var nodeRoot = $(`#jstree_articulos_normas_${tipoNorma}`)
+            .jstree()
+            .get_node("root");
+
+          var articuloID = arrayArticulos[0].properties.articulo;
+          var articuloNode;
+
+          if (arrayArticulos)
+            arrayArticulos.forEach((feature) => {
+							let tit=``;
+
+							if(feature.properties.tipo == "Article")
+              	tit = `Art. ${feature.properties.articulo} ${feature.properties.titulo}`;
+							else if(feature.properties.tipo == "Paragraph" || feature.properties.tipo == "SArticle")
+              	tit = feature.properties.titulo;
+
+              if (feature.properties.relevancia == "High")
+                tit = `&lt;Label style='font-size:8pt;font-family:Arial Black;color:#540707'>${tit}&lt;/Label>`;
+              else if (feature.properties.relevancia == "Medium")
+                tit = `&lt;Label style='text-decoration:underline;font-size:9pt;font-family:Arial;color:#003366'>${tit}&lt;/Label>`;
+
+              let nodeArt = {
+								id: feature.properties.orden,
+                text: tit,
+                data: feature.properties.contenido,
+                icon: `images/documentmanager/${
+                  feature.properties.tipo === "Article"
+                    ? "Article"
+                    : "Paragraph"
+                }16.png`,
+              };
+
+              if (feature.properties.tipo == "Article" || feature.properties.tipo == "SArticle") { 
+                articuloID = feature.properties.orden;
+
+                articuloNode = $(`#jstree_articulos_normas_${tipoNorma}`)
+                  .jstree(true)
+                  .create_node(nodeRoot, nodeArt, "last");
+              } else if (feature.properties.tipo == "Paragraph") {
+                const node = $(`#jstree_articulos_normas_${tipoNorma}`)
+                  .jstree(true)
+                  .create_node(articuloNode, nodeArt, "last");
+
+                if (node == false)
+                  $(`#jstree_articulos_normas_${tipoNorma}`)
+                    .jstree(true)
+                    .create_node(nodeRoot, nodeArt, "last");
+
+                $(this).jstree("open_node", articuloID);
+              }
+            });
+
+          const highRelevanciaFeature = arrayArticulos.find(
+            (feature) => feature.properties.relevancia === "High"
+          );
+
+					console.log(highRelevanciaFeature)
+
+          if (highRelevanciaFeature) {
+            $(`#jstree_articulos_normas_${tipoNorma}`).jstree(
+              "select_node",
+              highRelevanciaFeature.properties.orden
+            );
+          } else {
+            $(`#jstree_articulos_normas_${tipoNorma}`).jstree(
+              "select_node",
+              arrayArticulos[0].properties.orden
+            );
+          }
+        }
+      );
+    });
+
+    const htmTreeArticulos_normas = `&lt;div style='font-size:9pt;font-family:Arial;height:280px;overflow: auto;padding-top: 2px; padding-right: 0px; padding-bottom: 0px; padding-left: 0px' id="jstree_articulos_normas_${tipoNorma}">&lt;/div>`;
+
+		return htmTreeArticulos_normas;
+  }
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Frontend.html">Frontend</a></li><li><a href="module-Router.html">Router</a></li></ul><h3>Namespaces</h3><ul><li><a href="SedipualbaController.html">SedipualbaController</a></li><li><a href="VisorController.html">VisorController</a></li></ul><h3>Classes</h3><ul><li><a href="module-Frontend.Asistente.html">Asistente</a></li><li><a href="module-Frontend.DataReader.html">DataReader</a></li><li><a href="module-Frontend.DataReaderSedipualb.html">DataReaderSedipualb</a></li><li><a href="module-Frontend.FeatureUrbanistic.html">FeatureUrbanistic</a></li><li><a href="module-Frontend.Form_CATALOGO_PGOU98.html">Form_CATALOGO_PGOU98</a></li><li><a href="module-Frontend.Form_PARAMETROS_CALIFICACIONES_PRI.html">Form_PARAMETROS_CALIFICACIONES_PRI</a></li><li><a href="module-Frontend.Form_PARAMETROS_EQ_PGOU98.html">Form_PARAMETROS_EQ_PGOU98</a></li><li><a href="module-Frontend.Form_PARAMETROS_RSD_PGOU98.html">Form_PARAMETROS_RSD_PGOU98</a></li><li><a href="module-Frontend.Form_PARAMETROS_SEC_PGOU98.html">Form_PARAMETROS_SEC_PGOU98</a></li><li><a href="module-Frontend.Form_PARAMETROS_TER_PGOU98.html">Form_PARAMETROS_TER_PGOU98</a></li><li><a href="module-Frontend.Form_PARAMETROS_VE_PGOU98.html">Form_PARAMETROS_VE_PGOU98</a></li><li><a href="module-Frontend.Form_SISTEMAS_PG2023.html">Form_SISTEMAS_PG2023</a></li><li><a href="module-Frontend.Form_SISTEMAS_PGOU98.html">Form_SISTEMAS_PGOU98</a></li><li><a href="module-Frontend.Form_SISTEMAS_PRI.html">Form_SISTEMAS_PRI</a></li><li><a href="module-Frontend.Form_UNIDAD_EJECUCION_PGOU98.html">Form_UNIDAD_EJECUCION_PGOU98</a></li><li><a href="module-Frontend.Form_UNIDAD_EJECUCION_PRI.html">Form_UNIDAD_EJECUCION_PRI</a></li><li><a href="module-Frontend.I18nHandler.html">I18nHandler</a></li><li><a href="module-Frontend.MapLayer.html">MapLayer</a></li><li><a href="module-Frontend.MapLayers.html">MapLayers</a></li><li><a href="module-Frontend.MapLayersVisor.html">MapLayersVisor</a></li><li><a href="module-Frontend.MapManager.html">MapManager</a></li><li><a href="module-Frontend.MapQuery.html">MapQuery</a></li><li><a href="module-Frontend.NormativaDialog.html">NormativaDialog</a></li><li><a href="module-Frontend.QueryDialog.html">QueryDialog</a></li><li><a href="module-Frontend.QueryDialogEXP.html">QueryDialogEXP</a></li><li><a href="module-Frontend.QueryDialogEXP_Planeamiento.html">QueryDialogEXP_Planeamiento</a></li><li><a href="module-Frontend.QueryDialogPG2023.html">QueryDialogPG2023</a></li><li><a href="module-Frontend.QueryDialogPGOU98.html">QueryDialogPGOU98</a></li><li><a href="module-Frontend.QueryDialogPRI.html">QueryDialogPRI</a></li><li><a href="module-Frontend.SIGDUMap.html">SIGDUMap</a></li><li><a href="module-Frontend.Sedipualb.html">Sedipualb</a></li><li><a href="module-Frontend.TOC.html">TOC</a></li></ul><h3>Global</h3><ul><li><a href="global.html#mainApp">mainApp</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a> on Sat Dec 16 2023 19:01:33 GMT+0100 (hora estándar de Europa central)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

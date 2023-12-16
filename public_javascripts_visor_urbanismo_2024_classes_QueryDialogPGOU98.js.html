@@ -1,0 +1,1796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: public/javascripts/visor_urbanismo_2024/classes/QueryDialogPGOU98.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: public/javascripts/visor_urbanismo_2024/classes/QueryDialogPGOU98.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Clase para gestionar los diálogos de consulta relacionados con el Plan General de Ordenación Urbana de 1998 (PGOU98).
+ * @memberof module:Frontend
+ */
+class QueryDialogPGOU98 {
+  /**
+   * Crea una instancia de QueryDialogPGOU98.
+   * @param {object} map - Objeto que representa el mapa.
+   * @param {object} mapLayers - Capas del mapa.
+   * @param {object} toc - Tabla de contenido del mapa.
+   * @param {object} sigduMap - Objeto de mapa SIGDU personalizado.
+   */
+  constructor(map, mapLayers, toc, sigduMap) {
+    this.sigduMap = sigduMap;
+    this.toc = toc;
+    this.map = map;
+    this.mapLayers = mapLayers;
+  }
+
+  createHTML() {
+    const divQUERY = `&lt;div id="divQUERY_PGOU98" style='background-color:#f2f2f2;width:100%;height:60%'>&lt;/div`;
+    const divOptionsQUERY = `&lt;div id="divOptionsQUERY_PGOU98" style='background-color:#f2f2f2;width:100%'>&lt;/div`;
+    const strSelectTABLE = this.createSelectTABLE();
+
+    const html = `
+        &lt;BR>
+        ${strSelectTABLE}
+        &lt;BR>&lt;BR>          
+        ${divOptionsQUERY}
+        &lt;BR>&lt;BR> 
+        ${divQUERY}
+        &lt;BR>
+      `;
+    return html;
+  }
+
+  async doActionRow(table, fid) {
+    const style = () => {
+      return {
+        fillColor: "yellow",
+        weight: 6,
+        opacity: 1,
+        color: "yellow",
+        dashArray: "2,8",
+        fillOpacity: 0,
+      };
+    };
+
+    console.log("tabla=" + table + ", " + fid);
+    let reader = new DataReader();
+    let info_geojson = await reader.readDataFeature(table, "fid=" + fid);
+
+    var bbox = turf.bbox(info_geojson.features[0].geometry);
+    var polyBBOX = turf.bboxPolygon(bbox);
+
+    var coordsB = turf.getCoords(polyBBOX);
+    var coords = [];
+    coords[0] = [coordsB[0][0][1], coordsB[0][0][0]];
+    coords[1] = [coordsB[0][1][1], coordsB[0][1][0]];
+    coords[2] = [coordsB[0][2][1], coordsB[0][2][0]];
+    coords[3] = [coordsB[0][3][1], coordsB[0][3][0]];
+
+    var poly = L.polygon(coords);
+
+    /*if(isMobile())
+        sidebar.close('queryTables');*/
+
+    this.sigduMap.map.fitBounds(poly.getBounds());
+
+    if (this.sigduMap.puntos != null)
+      this.sigduMap.map.removeLayer(this.sigduMap.puntos);
+    this.sigduMap.puntos = L.geoJSON(info_geojson, { style: style });
+
+    this.sigduMap.map.addLayer(this.sigduMap.puntos);
+  }
+
+  async formatQuery() {
+    $(document).ready(function () {
+      $("#table_queryPGOU98")
+        .removeAttr("width")
+        .DataTable({
+          dom: "Bfrtip",
+          buttons: [
+            "copy",
+            "excel",
+            //'csv',
+            "pdf",
+            "print",
+          ],
+          scrollY: "43vh",
+          scrollCollapse: true,
+          scrollX: true,
+          paging: false,
+          padding: "3px",
+          language: {
+            decimal: "",
+            emptyTable: "No hay información",
+            info: "Mostrando _START_ a _END_ de _TOTAL_ Entradas",
+            infoEmpty: "Mostrando 0 to 0 of 0 Entradas",
+            infoFiltered: "(Filtrado de _MAX_ total entradas)",
+            infoPostFix: "",
+            thousands: ",",
+            lengthMenu: "Mostrar _MENU_ Entradas",
+            loadingRecords: "Cargando...",
+            processing: "Procesando...",
+            search: "Buscar:",
+            zeroRecords: "Sin resultados encontrados",
+            paginate: {
+              first: "Primero",
+              last: "Ultimo",
+              next: "Siguiente",
+              previous: "Anterior",
+            },
+          },
+        });
+
+        //$("#table_queryPGOU98 td").css("padding", "5px");
+    });
+  }
+
+  async queryUE(name, table, filter) {
+    const reader = new DataReader();
+    const info_geojson = await reader.readDataFeature(table, filter);
+
+    console.log(info_geojson);
+
+    //jsonData = JSON.stringify(info_geojson);
+
+    let html_QUERY_HEAD = `
+          &lt;button style="padding-top:4px;padding-bottom:4px;" class="ui-button ui-widget ui-corner-all" title="Descàrrega en format geojson"  id="download_pgou98">&lt;i class="fa fa-download">&lt;/i>&lt;/button>
+          &lt;button style="padding-top:4px;padding-bottom:4px;" class="ui-button ui-widget ui-corner-all" title="Afegeix consulta a taula de contingut" id="add_layer_toc_pgou98">&lt;i class="fa fa-plus-circle">&lt;/i>&lt;/button>
+    
+          &lt;TABLE id="table_queryPGOU98"   class="stripe row-border order-column" style="padding:3px;font-size:8pt;font-family:Arial;width:100%">
+         
+          &lt;thead style="background-color:#e1eefb;">
+            &lt;tr>
+						  &lt;th>FID&lt;/td>
+							&lt;th>CODIGO&lt;/td>   
+              &lt;th>DENOMINACION&lt;/td>           
+            &lt;/tr>
+          &lt;/thead>`;
+
+    let html_QUERY_ROWS = "&lt;tbody>";
+
+    if (info_geojson.features != null)
+      for (var n = 0; n &lt; info_geojson.features.length; n++) {
+        html_QUERY_ROWS =
+          html_QUERY_ROWS +
+          `
+          &lt;tr id="queryUE_PG998_${info_geojson.features[n].properties.fid}" 
+            data-table="${table}" 
+            data-fid="${info_geojson.features[n].properties.fid}"
+            data-accion="doActionRowPGOU98">
+
+            &lt;td>${info_geojson.features[n].properties.fid}&lt;/td>
+            &lt;td>${info_geojson.features[n].properties.codigo}&lt;/td>    
+            &lt;td>${info_geojson.features[n].properties.titulo ? info_geojson.features[n].properties.titulo.toUpperCase() : "-"}&lt;/td>  						             
+          &lt;/tr>`;
+      }
+
+    html_QUERY_ROWS = html_QUERY_ROWS + "&lt;/tbody>";
+
+    const html_QUERY = html_QUERY_HEAD + html_QUERY_ROWS + `&lt;/TABLE>`;
+
+    this.formatQuery();
+
+    var elem = document.getElementById("divQUERY_PGOU98");
+    elem.style.height = "70%";
+    elem.innerHTML = html_QUERY;
+
+    const self = this;
+
+    var elementos = document.querySelectorAll(
+      'tr[data-accion="doActionRowPGOU98"]'
+    );
+    for (var i = 0; i &lt; elementos.length; i++) {
+      const tr = elementos[i];
+
+      if (tr) {
+        tr.addEventListener("click", async function () {
+          var fid = tr.getAttribute("data-fid");
+          var table = tr.getAttribute("data-table");
+
+          console.log("click", fid, table);
+
+          self.doActionRow(table, fid);
+        });
+      }
+    }
+
+    document
+      .getElementById("download_pgou98")
+      .addEventListener("click", function () {
+        self.download(name, info_geojson);
+      });
+    document
+      .getElementById("add_layer_toc_pgou98")
+      .addEventListener("click", function () {
+        self.addLayerTOC(name, info_geojson, filter);
+      });
+  }
+
+  async queryCAT_ACT(name, table, filter) {
+    const reader = new DataReader();
+    const info_geojson = await reader.readDataFeature(table, filter);
+
+    console.log(info_geojson);
+
+    //jsonData = JSON.stringify(info_geojson);
+
+    let html_QUERY_HEAD = `
+          &lt;button style="padding-top:4px;padding-bottom:4px;" class="ui-button ui-widget ui-corner-all" title="Descàrrega en format geojson"  id="download_pgou98">&lt;i class="fa fa-download">&lt;/i>&lt;/button>
+          &lt;button style="padding-top:4px;padding-bottom:4px;" class="ui-button ui-widget ui-corner-all" title="Afegeix consulta a taula de contingut" id="add_layer_toc_pgou98">&lt;i class="fa fa-plus-circle">&lt;/i>&lt;/button>
+    
+          &lt;TABLE id="table_queryPGOU98"   class="stripe row-border order-column" style="padding:3px;font-size:8pt;font-family:Arial;width:100%">
+         
+          &lt;thead style="background-color:#e1eefb;">
+            &lt;tr>
+							&lt;th>FID&lt;/td>
+							&lt;th>CODI&lt;/td>
+							&lt;th>PROT.&lt;/td>
+							&lt;th>DENOMINACIÓ&lt;/td>  
+							&lt;th>CATEGORIA&lt;/td> 
+							&lt;th>TIPOLOGIA&lt;/td> 
+							&lt;th>USO ACTUAL&lt;/td>                   
+            &lt;/tr>
+          &lt;/thead>`;
+
+    let html_QUERY_ROWS = "&lt;tbody>";
+
+    if (info_geojson.features != null)
+      for (var n = 0; n &lt; info_geojson.features.length; n++) {
+        var area = info_geojson.features[n].properties.superfreal;
+        if (area == 0 || area == null)
+          area = turf.area(info_geojson.features[n].geometry);
+        if (area != null) area = area.toFixed(2);
+        html_QUERY_ROWS =
+          html_QUERY_ROWS +
+          `
+					&lt;tr id="queryCAT_ACT_PG998_${info_geojson.features[n].properties.fid}" 
+            data-table="${table}" 
+            data-fid="${info_geojson.features[n].properties.fid}"
+            data-accion="doActionRowPGOU98">
+
+            &lt;td>${info_geojson.features[n].properties.fid}&lt;/td>
+            &lt;td>${info_geojson.features[n].properties.codigo}&lt;/td>
+            &lt;td>${info_geojson.features[n].properties.proteccion}&lt;/td>
+            &lt;td>${
+              info_geojson.features[n].properties.denominacion
+                ? info_geojson.features[
+                    n
+                  ].properties.denominacion.toUpperCase()
+                : "-"
+            }&lt;/td>
+            &lt;td>${info_geojson.features[n].properties.categoria}&lt;/td>
+            &lt;td>${info_geojson.features[n].properties.tipologia}&lt;/td>
+            &lt;td>${info_geojson.features[n].properties.us_actual}&lt;/td>         
+          &lt;/tr>`;
+      }
+
+    html_QUERY_ROWS = html_QUERY_ROWS + "&lt;/tbody>";
+
+    const html_QUERY = html_QUERY_HEAD + html_QUERY_ROWS + `&lt;/TABLE>`;
+
+    this.formatQuery();
+
+    var elem = document.getElementById("divQUERY_PGOU98");
+    elem.style.height = "70%";
+    elem.innerHTML = html_QUERY;
+
+    const self = this;
+
+    var elementos = document.querySelectorAll(
+      'tr[data-accion="doActionRowPGOU98"]'
+    );
+    for (var i = 0; i &lt; elementos.length; i++) {
+      const tr = elementos[i];
+
+      if (tr) {
+        tr.addEventListener("click", async function () {
+          var fid = tr.getAttribute("data-fid");
+          var table = tr.getAttribute("data-table");
+
+          console.log("click", fid, table);
+
+          self.doActionRow(table, fid);
+        });
+      }
+    }
+
+    document
+      .getElementById("download_pgou98")
+      .addEventListener("click", function () {
+        self.download(name, info_geojson);
+      });
+    document
+      .getElementById("add_layer_toc_pgou98")
+      .addEventListener("click", function () {
+        self.addLayerTOC(name, info_geojson, filter);
+      });
+  }
+
+  async queryCAT(name, table, filter) {
+    const reader = new DataReader();
+    const info_geojson = await reader.readDataFeature(table, filter);
+
+    console.log(info_geojson);
+
+    //jsonData = JSON.stringify(info_geojson);
+
+    let html_QUERY_HEAD = `
+          &lt;button style="padding-top:4px;padding-bottom:4px;" class="ui-button ui-widget ui-corner-all" title="Descàrrega en format geojson"  id="download_pgou98">&lt;i class="fa fa-download">&lt;/i>&lt;/button>
+          &lt;button style="padding-top:4px;padding-bottom:4px;" class="ui-button ui-widget ui-corner-all" title="Afegeix consulta a taula de contingut" id="add_layer_toc_pgou98">&lt;i class="fa fa-plus-circle">&lt;/i>&lt;/button>
+    
+          &lt;TABLE id="table_queryPGOU98"   class="stripe row-border order-column" style="padding:3px;font-size:8pt;font-family:Arial;width:100%">
+         
+          &lt;thead style="background-color:#e1eefb;">
+            &lt;tr>
+							&lt;th>FID&lt;/td>
+							&lt;th>CODI&lt;/td>
+							&lt;th>PROT.&lt;/td>
+							&lt;th>DENOMINACIÓ&lt;/td> 
+							&lt;th>DECLARACIÓ&lt;/td>   
+							&lt;th>CATEGORIA&lt;/td> 
+							&lt;th>TIPOLOGIA&lt;/td> 
+							&lt;th>CLASIFICACIÓ&lt;/td>                   
+            &lt;/tr>
+          &lt;/thead>`;
+
+    let html_QUERY_ROWS = "&lt;tbody>";
+
+    if (info_geojson.features != null)
+      for (var n = 0; n &lt; info_geojson.features.length; n++) {
+        var area = info_geojson.features[n].properties.superfreal;
+        if (area == 0 || area == null)
+          area = turf.area(info_geojson.features[n].geometry);
+        if (area != null) area = area.toFixed(2);
+        html_QUERY_ROWS =
+          html_QUERY_ROWS +
+          `
+          &lt;tr id="queryCAT_PG998_${info_geojson.features[n].properties.fid}" 
+            data-table="${table}" 
+            data-fid="${info_geojson.features[n].properties.fid}"
+            data-accion="doActionRowPGOU98">
+
+            &lt;td>${info_geojson.features[n].properties.fid}&lt;/td>
+            &lt;td>${info_geojson.features[n].properties.codigo}&lt;/td>
+            &lt;td>${info_geojson.features[n].properties.proteccion}&lt;/td>
+            &lt;td>${info_geojson.features[n].properties.denominacion}&lt;/td>
+            &lt;td>${info_geojson.features[n].properties.declaracion}&lt;/td>
+            &lt;td>${info_geojson.features[n].properties.categoria}&lt;/td>
+            &lt;td>${info_geojson.features[n].properties.tipologia}&lt;/td>
+            &lt;td>${info_geojson.features[n].properties.clasificacion}&lt;/td>             
+          &lt;/tr>`;
+      }
+
+    html_QUERY_ROWS = html_QUERY_ROWS + "&lt;/tbody>";
+
+    const html_QUERY = html_QUERY_HEAD + html_QUERY_ROWS + `&lt;/TABLE>`;
+
+    this.formatQuery();
+
+    var elem = document.getElementById("divQUERY_PGOU98");
+    elem.style.height = "70%";
+    elem.innerHTML = html_QUERY;
+
+    const self = this;
+
+    var elementos = document.querySelectorAll(
+      'tr[data-accion="doActionRowPGOU98"]'
+    );
+    for (var i = 0; i &lt; elementos.length; i++) {
+      const tr = elementos[i];
+
+      if (tr) {
+        tr.addEventListener("click", async function () {
+          var fid = tr.getAttribute("data-fid");
+          var table = tr.getAttribute("data-table");
+
+          console.log("click", fid, table);
+
+          self.doActionRow(table, fid);
+        });
+      }
+    }
+
+    document
+      .getElementById("download_pgou98")
+      .addEventListener("click", function () {
+        self.download(name, info_geojson);
+      });
+    document
+      .getElementById("add_layer_toc_pgou98")
+      .addEventListener("click", function () {
+        self.addLayerTOC(name, info_geojson, filter);
+      });
+  }
+
+  async querySistemas(name, table, filter) {
+    const reader = new DataReader();
+    const info_geojson = await reader.readDataFeature(table, filter);
+
+    console.log(info_geojson);
+
+    //jsonData = JSON.stringify(info_geojson);
+
+    let html_QUERY_HEAD = `
+          &lt;button style="padding-top:4px;padding-bottom:4px;" class="ui-button ui-widget ui-corner-all" title="Descàrrega en format geojson"  id="download_pgou98">&lt;i class="fa fa-download">&lt;/i>&lt;/button>
+          &lt;button style="padding-top:4px;padding-bottom:4px;" class="ui-button ui-widget ui-corner-all" title="Afegeix consulta a taula de contingut" id="add_layer_toc_pgou98">&lt;i class="fa fa-plus-circle">&lt;/i>&lt;/button>
+    
+          &lt;TABLE id="table_queryPGOU98"   class="stripe row-border order-column" style="padding:3px;font-size:8pt;font-family:Arial;width:100%">
+         
+          &lt;thead style="background-color:#e1eefb;">
+            &lt;tr>
+						&lt;th>FID&lt;/td>
+						&lt;th>CODI&lt;/td>
+						&lt;th>IDENTIFICANT&lt;/td>
+						&lt;th>DENOMINACIÓ&lt;/td>
+						&lt;th>SUPERFICIE&lt;/td>
+						&lt;th>DOTACION&lt;/td>
+						&lt;th>ORDENACIÓ&lt;/td>
+						&lt;th>DOMINI&lt;/td>
+						&lt;th>ÚS&lt;/td>
+						&lt;th>Nº INVENTARI&lt;/LABEL>&lt;/td>
+						&lt;th>CLASIF. SÒL&lt;/LABEL>&lt;/td>
+						&lt;th>SISTEMA&lt;/LABEL>&lt;/td>
+						&lt;th>ETAPES&lt;/LABEL>&lt;/td>                
+            &lt;/tr>
+          &lt;/thead>`;
+
+    let html_QUERY_ROWS = "&lt;tbody>";
+
+    if (info_geojson.features != null)
+      for (var n = 0; n &lt; info_geojson.features.length; n++) {
+        var area = info_geojson.features[n].properties.superfreal;
+        if (area == 0 || area == null)
+          area = turf.area(info_geojson.features[n].geometry);
+        if (area != null) area = area.toFixed(2);
+        html_QUERY_ROWS =
+          html_QUERY_ROWS +
+          `
+          &lt;tr id="querySISTEMA_PG998_${info_geojson.features[n].properties.fid}" 
+            data-table="${table}" 
+            data-fid="${info_geojson.features[n].properties.fid}"
+            data-accion="doActionRowPGOU98">
+
+            &lt;td >${info_geojson.features[n].properties.fid}&lt;/td>
+            &lt;td>${info_geojson.features[n].properties.codigo}&lt;/td>
+            &lt;td>${info_geojson.features[n].properties.identif}&lt;/td>
+            &lt;td>${info_geojson.features[n].properties.denominaci}&lt;/td>
+            &lt;td>${area}&lt;/td>
+            &lt;td>${info_geojson.features[n].properties.uso2}&lt;/td>
+            &lt;td>${info_geojson.features[n].properties.ordenacion}&lt;/td>
+            &lt;td>${info_geojson.features[n].properties.domini}&lt;/td>
+            &lt;td>${info_geojson.features[n].properties.us}&lt;/td>
+            &lt;td>${info_geojson.features[n].properties.num_inv}&lt;/td>
+            &lt;td>${info_geojson.features[n].properties.clas_suelo}&lt;/td>
+            &lt;td>${info_geojson.features[n].properties.sistema}&lt;/td>
+            &lt;td>${info_geojson.features[n].properties.etapes}&lt;/td>             
+          &lt;/tr>`;
+      }
+
+    html_QUERY_ROWS = html_QUERY_ROWS + "&lt;/tbody>";
+
+    const html_QUERY = html_QUERY_HEAD + html_QUERY_ROWS + `&lt;/TABLE>`;
+
+    this.formatQuery();
+
+    var elem = document.getElementById("divQUERY_PGOU98");
+    elem.style.height = "70%";
+    elem.innerHTML = html_QUERY;
+
+    const self = this;
+
+    var elementos = document.querySelectorAll(
+      'tr[data-accion="doActionRowPGOU98"]'
+    );
+    for (var i = 0; i &lt; elementos.length; i++) {
+      const tr = elementos[i];
+
+      if (tr) {
+        tr.addEventListener("click", async function () {
+          var fid = tr.getAttribute("data-fid");
+          var table = tr.getAttribute("data-table");
+
+          console.log("click", fid, table);
+
+          self.doActionRow(table, fid);
+        });
+      }
+    }
+
+    document
+      .getElementById("download_pgou98")
+      .addEventListener("click", function () {
+        self.download(name, info_geojson);
+      });
+    document
+      .getElementById("add_layer_toc_pgou98")
+      .addEventListener("click", function () {
+        self.addLayerTOC(name, info_geojson, filter);
+      });
+  }
+
+  async queryRSD(name, table, filter) {
+    const reader = new DataReader();
+    const info_geojson = await reader.readDataFeature(table, filter);
+
+    console.log(info_geojson);
+
+    //jsonData = JSON.stringify(info_geojson);
+
+    let html_QUERY_HEAD = `
+          &lt;button style="padding-top:4px;padding-bottom:4px;" class="ui-button ui-widget ui-corner-all" title="Descàrrega en format geojson"  id="download_pgou98">&lt;i class="fa fa-download">&lt;/i>&lt;/button>
+          &lt;button style="padding-top:4px;padding-bottom:4px;" class="ui-button ui-widget ui-corner-all" title="Afegeix consulta a taula de contingut" id="add_layer_toc_pgou98">&lt;i class="fa fa-plus-circle">&lt;/i>&lt;/button>
+    
+          &lt;TABLE id="table_queryPGOU98"   class="stripe row-border order-column" style="padding:3px;font-size:8pt;font-family:Arial;width:100%">
+         
+          &lt;thead style="background-color:#e1eefb;">
+            &lt;tr>
+						  &lt;th>FID&lt;/td>
+							&lt;th>CODIGO&lt;/td>           
+            &lt;/tr>
+          &lt;/thead>`;
+
+    let html_QUERY_ROWS = "&lt;tbody>";
+
+    if (info_geojson.features != null)
+      for (var n = 0; n &lt; info_geojson.features.length; n++) {
+        html_QUERY_ROWS =
+          html_QUERY_ROWS +
+          `&lt;tr id="queryRSD_PG998_${info_geojson.features[n].properties.fid}" 
+            data-table="${table}" 
+            data-fid="${info_geojson.features[n].properties.fid}"
+            data-accion="doActionRowPGOU98">
+
+            &lt;td>${info_geojson.features[n].properties.fid}&lt;/td>
+            &lt;td>${info_geojson.features[n].properties.codigo}&lt;/td>    
+                        
+          &lt;/tr>`;
+      }
+
+    html_QUERY_ROWS = html_QUERY_ROWS + "&lt;/tbody>";
+
+    const html_QUERY = html_QUERY_HEAD + html_QUERY_ROWS + `&lt;/TABLE>`;
+
+    this.formatQuery();
+
+    var elem = document.getElementById("divQUERY_PGOU98");
+    elem.style.height = "70%";
+    elem.innerHTML = html_QUERY;
+
+    const self = this;
+
+    var elementos = document.querySelectorAll(
+      'tr[data-accion="doActionRowPGOU98"]'
+    );
+    for (var i = 0; i &lt; elementos.length; i++) {
+      const tr = elementos[i];
+
+      if (tr) {
+        tr.addEventListener("click", async function () {
+          var fid = tr.getAttribute("data-fid");
+          var table = tr.getAttribute("data-table");
+
+          console.log("click", fid, table);
+
+          self.doActionRow(table, fid);
+        });
+      }
+    }
+
+    document
+      .getElementById("download_pgou98")
+      .addEventListener("click", function () {
+        self.download(name, info_geojson);
+      });
+    document
+      .getElementById("add_layer_toc_pgou98")
+      .addEventListener("click", function () {
+        self.addLayerTOC(name, info_geojson, filter);
+      });
+  }
+
+  generateIcon(iconColor) {
+    // Tamaño del icono cuadrado
+    const iconSize = 16; // Puedes ajustar el tamaño según tus necesidades
+
+    // Color del icono (en formato hexadecimal)
+    //const iconColor = "#FF5733"; // Cambia esto al color que desees
+
+    // Crea un elemento canvas para dibujar el icono
+    const canvas = document.createElement("canvas");
+    canvas.width = iconSize;
+    canvas.height = iconSize;
+
+    // Obtiene el contexto 2D del canvas
+    const context = canvas.getContext("2d");
+
+    // Dibuja un cuadrado relleno con el color especificado
+    context.fillStyle = iconColor;
+    context.fillRect(0, 0, iconSize, iconSize);
+    context.strokeStyle = "black";
+    context.strokeRect(0, 0, iconSize, iconSize);
+
+    // Convierte el canvas a una imagen Data URL en formato PNG
+    const iconDataUrl = canvas.toDataURL("image/png");
+
+    // Ahora tienes el icono en forma de Data URL que puedes utilizar en tu jstree
+    // Puedes asignarlo a un nodo jstree como su icono personalizado
+
+    return iconDataUrl;
+  }
+
+  generateNewID(jstree, idBase) {
+    // Genera un nuevo ID único basado en el ID base
+    let nuevoID = idBase;
+    let contador = 1;
+    while (jstree.get_node(nuevoID)) {
+      nuevoID = idBase + "_" + contador;
+      contador++;
+    }
+    return nuevoID;
+  }
+
+  getRandomColor() {
+    var letters = '0123456789ABCDEF';
+    var color = '#';
+    for (var i = 0; i &lt; 6; i++) {
+      color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
+  }
+
+  addLayerTOC(name, geojson, filter) {
+    const color = this.getRandomColor();
+
+    const layerQuery = L.geoJSON(geojson, {
+      // weight:1,
+      fillColor: color,
+      weight: 0.5,
+      opacity: 1,
+      color: "black",
+      //  dashArray: '2,8',
+      fillOpacity: 0.8,
+    });
+
+    const newID = "query";
+    // Obtén una referencia al jstree
+    const jstree = $("#jstree_consultas").jstree(true);
+    const id = this.generateNewID(jstree, newID);
+    console.log("id=", id);
+    this.mapLayers.pushMapLayer(id, layerQuery);
+    layerQuery.addTo(this.map);
+
+    var node = {
+      id: id,
+      data: layerQuery,
+      text: name + " - " + filter,
+      icon: this.generateIcon(color),
+    };
+    var nodeP = $("#jstree_consultas").jstree().get_node("root");
+    $("#jstree_consultas").jstree().create_node(nodeP, node, "last");
+    $("#jstree_consultas").jstree().check_node(node);
+  }
+
+  download(name, geojson) {
+    const jsonData = JSON.stringify(geojson);
+    var a = document.createElement("a");
+    var file = new Blob([jsonData], { type: "text/plain" });
+    a.href = URL.createObjectURL(file);
+    a.download = name + ".geojson";
+    a.click();
+  }
+
+  createSelectTABLE() {
+    const strOptionsTables = `
+        &lt;option value="NADA" style='font-size:7.5pt.5pt;font-family:Arial;background-color:white;color:black' id="optNADA">-&lt;/option>
+				&lt;optgroup label="Zones ordinaries del Sòl Urbà" style='background-color:white;font-size:7.5pt.5pt;font-family:Arial Black;color:black'>
+						&lt;option value="RSD" style='font-size:7.5pt.5pt;font-family:Arial;background-color:white;color:black' id="optRSD">(RSD) Zona Uso Residencial&lt;/option>   
+						&lt;option value="RSD_NE" style='font-size:7.5pt.5pt;font-family:Arial;background-color:white;color:black' id="optRSD_NE">(RSD) Zona Uso Residencial (Zona no edificable)&lt;/option>             
+						&lt;option value="SEC" style='font-size:7.5pt.5pt;font-family:Arial;background-color:white;color:black' id="optSEC">(SEC) Zona Uso Secundario&lt;/option>            
+						&lt;option value="TER" style='font-size:7.5pt.5pt;font-family:Arial;background-color:white;color:black' id="optTER">(TER) Zona Uso Terciario&lt;/option>                                  
+				&lt;/optgroup>   
+        &lt;optgroup label="Sistemas" style='background-color:white;font-size:7.5pt.5pt;font-family:Arial Black;color:black'>
+						&lt;option value="SLEC" style='font-size:7.5pt.5pt;font-family:Arial;background-color:white;color:black' id="optSLEQ">(SLEC) Equipaments Comunitaris (S.Local)&lt;/option>            
+						&lt;option value="SLEL" style='font-size:7.5pt.5pt;font-family:Arial;background-color:white;color:black' id="optSLEL">(SLEL) Espais Lliures Publics (S.Local)&lt;/option>            
+						&lt;option value="SLCI" style='font-size:7.5pt.5pt;font-family:Arial;background-color:white;color:black' id="optSLC">(SLCI) Comunicacions e Infraestructuras (S.Local)&lt;/option>               
+						&lt;option value="SGEC" style='font-size:7.5pt.5pt;font-family:Arial;background-color:white;color:black'
+            id="optSGEC" name="(SGEC) Equipamientos Comunitarios" >(SGEC) Equipamientos Comunitarios (S.General)&lt;/option>       
+						&lt;option value="SGEL" style='font-size:7.5pt.5pt;font-family:Arial;background-color:white;color:black' id="optSGEL">(SGEL) Espais Lliures (S.General)&lt;/option>                          	           
+						&lt;option value="SGCI" style='font-size:7.5pt.5pt;font-family:Arial;background-color:white;color:black' id="optSGIF">(SGCI) comunicaciones e Infraestructures (S.General)&lt;/option>                          				
+        &lt;/optgroup>
+				&lt;optgroup label="Protección i Preservación" style='background-color:white;font-size:7.5pt.5pt;font-family:Arial Black;color:black'>
+						&lt;option value="CAT" style='font-size:7.5pt.5pt;font-family:Arial;background-color:white;color:black' id="optCAT">(CAT) Catalogos&lt;/option>    
+						&lt;option value="CAT_ACT" style='font-size:7.5pt.5pt;font-family:Arial;background-color:white;color:black' id="optCAT_ACT">(CAT_ACT) Catalogos actualización&lt;/option>      
+						&lt;option value="CH" style='font-size:7.5pt.5pt;font-family:Arial;background-color:white;color:black' id="optCH">(CH) Zones Centre Historic (N/R)&lt;/option>   
+						&lt;option value="r" style='font-size:7.5pt.5pt;font-family:Arial;background-color:white;color:black' id="optPV">(r) Preservació arquitectònica ambiental&lt;/option>                     
+				&lt;/optgroup>  
+				&lt;optgroup label="Ambitos de gestión" style='background-color:white;font-size:7.5pt.5pt;font-family:Arial Black;color:black'>
+						&lt;option value="UE" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optUE">(UE) Unididad de ejecución&lt;/option>
+						&lt;option value="API" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optAPI">(API) Area Planeamienot Incorporado&lt;/option>
+						&lt;option value="ARE" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optARE">(ARE) Area régimen especial en suelo urbano&lt;/option>  
+				&lt;/optgroup>    
+        `;
+
+    const strSelectTABLE = `    
+          &lt;select style='background-color:#5b9ec1;color:white;padding:2px;font-size:9pt;font-family:Arial;width:98%;height:20px;overflow: scroll' name="selectTablesPG2023" id="selectTablesPGOU98" >
+          
+              ${strOptionsTables}
+          &lt;/select>
+          `;
+
+    return strSelectTABLE;
+  }
+
+  changeQUERY() {
+    let tipo;
+    let filter = "fid>0";
+    const elem = document.getElementById("selectTablesPGOU98");
+
+    if (elem != null) {
+      tipo = elem.value;
+    }
+
+    if (tipo == "RSD") {
+      const div = document.getElementById("divOptionsQUERY_PGOU98");
+      const  tipo_ord = div.querySelector("#selectTIPO_ORD").value;
+			const  tipoCalif = div.querySelector("#selectTIPO").value;
+      const  calificacion = div.querySelector("#selectCALIF").value;
+      const  alturaFirst = div.querySelector("#alturaFirst").value;
+      const   alturaEnd = div.querySelector("#alturaEnd").value;
+
+      if (tipo_ord != "TOTS") {
+        if (tipo_ord == "RES_AVMCV")
+          filter =
+            filter +
+            " AND (codigo like 'A%' OR  codigo like 'B%' OR codigo like 'C%')";
+        if (tipo_ord == "RES_AVMCR")
+          filter = filter + " AND (codigo like 'D%' OR  codigo like 'H%')";
+        if (tipo_ord == "RES_P_RP")
+          filter = filter + " AND (codigo like 'E%' OR codigo like 'G%')";
+        if (tipo_ord == "RES_U_RPA")
+          filter = filter + " AND (codigo like 'I%')";
+        if (tipo_ord == "RES_U_RPS")
+          filter = filter + " AND (codigo like 'J%')";
+      }
+
+      if (tipoCalif !== "TOTS") filter += ` AND codigo like '${tipoCalif}%'`;
+      if (calificacion !== "TOTS")
+        filter += ` AND codigo like '${calificacion}%'`;
+      if (alturaFirst != "") filter += ` AND alturas>='${alturaFirst}'`;
+      if (alturaEnd != "") filter += ` AND alturas&lt;='${alturaEnd}'`;
+
+      console.log(filter);
+      this.queryRSD("Residencial (PGOU98)", "zona_residencial_1", filter);
+    }
+
+    if (tipo == "RSD_NE") {
+      const tipo_ord = document.getElementById("selectTIPO_ORD").value;
+      const tipoCalif = document.getElementById("selectTIPO").value;
+      const calificacion = document.getElementById("selectCALIF").value;
+
+      if (tipo_ord != "TOTS") {
+        if (tipo_ord == "RES_AVMCV")
+          filter =
+            filter +
+            " AND (codigo like 'A%' OR  codigo like 'B%' OR codigo like 'C%')";
+        if (tipo_ord == "RES_AVMCR")
+          filter = filter + " AND (codigo like 'D%' OR  codigo like 'H%')";
+        if (tipo_ord == "RES_P_RP")
+          filter = filter + " AND (codigo like 'E%' OR codigo like 'G%')";
+        if (tipo_ord == "RES_U_RPA")
+          filter = filter + " AND (codigo like 'I%')";
+        if (tipo_ord == "RES_U_RPS")
+          filter = filter + " AND (codigo like 'J%')";
+      }
+
+      if (tipoCalif !== "TOTS") filter += ` AND codigo like '${tipoCalif}%'`;
+      if (calificacion !== "TOTS")
+        filter += ` AND codigo like '${calificacion}%'`;
+
+      this.queryRSD(
+        "Residencial (PGOU98) No edificable",
+        "zona_residencial_ne",
+        filter
+      );
+    }
+
+    if (tipo == "SEC") {
+      const div = document.getElementById("divOptionsQUERY_PGOU98");
+			const  tipoCalif = div.querySelector("#selectTIPO").value;
+      const  calificacion = div.querySelector("#selectCALIF").value;
+
+      if (tipoCalif !== "TOTS") filter += ` AND codigo like '${tipoCalif}%'`;
+      if (calificacion !== "TOTS")
+        filter += ` AND codigo like '${calificacion}%'`;
+
+      this.queryRSD("Secundario (PGOU98)", "zona_secundaria", filter);
+    }
+
+    if (tipo == "TER") {
+      const div = document.getElementById("divOptionsQUERY_PGOU98");
+			const  tipoCalif = div.querySelector("#selectTIPO").value;
+      const  calificacion = div.querySelector("#selectCALIF").value;
+
+      if (tipoCalif !== "TOTS") filter += ` AND codigo like '${tipoCalif}%'`;
+      if (calificacion !== "TOTS")
+        filter += ` AND codigo like '${calificacion}%'`;
+
+      this.queryRSD("Terciario (PGOU98)", "zona_terciaria", filter);
+    }
+
+    if (tipo == "SLEC") {
+			const div = document.getElementById("divOptionsQUERY_PGOU98");
+			const ext_prop = div.querySelector("#selectEP").value;
+			const dominio = div.querySelector("#selectDOMINIO").value;
+			const uso_dot = div.querySelector("#selectUSO_DOT").value;
+			const calificacion = div.querySelector("#selectCALIFIC").value;
+
+
+      if (ext_prop !== "TOTS") filter += ` AND ext_prop='${ext_prop}'`;
+      if (dominio !== "TOTS") filter += ` AND domini='${dominio}'`;
+      if (uso_dot !== "TOTS") filter += ` AND uso2='${uso_dot}'`;
+      if (calificacion !== "TOTS")
+        filter += ` AND ordenacion='${calificacion}'`;
+
+      this.querySistemas(
+        "Equipamiento (Sistema local) (PGOU98)",
+        "slocal_equipamientos",
+        filter
+      );
+    }
+    if (tipo == "SGEC") {
+      const div = document.getElementById("divOptionsQUERY_PGOU98");
+			const ext_prop = div.querySelector("#selectEP").value;
+			const dominio = div.querySelector("#selectDOMINIO").value;
+			const uso_dot = div.querySelector("#selectUSO_DOT").value;
+			const calificacion = div.querySelector("#selectCALIFIC").value;
+
+      if (ext_prop !== "TOTS") filter += ` AND ext_prop='${ext_prop}'`;
+      if (dominio !== "TOTS") filter += ` AND domini='${dominio}'`;
+      if (uso_dot !== "TOTS") filter += ` AND uso2='${uso_dot}'`;
+      if (calificacion !== "TOTS")
+        filter += ` AND ordenacion='${calificacion}'`;
+
+      this.querySistemas(
+        "Equipamiento (Sistema General) (PGOU98)",
+        "sgeneral_equipamientos",
+        filter
+      );
+    }
+
+    if (tipo == "SLEL") {
+			const div = document.getElementById("divOptionsQUERY_PGOU98");
+			const ext_prop = div.querySelector("#selectEP").value;
+			const calificacion = div.querySelector("#selectCALIFIC").value;
+
+      if (ext_prop !== "TOTS") filter += ` AND ext_prop='${ext_prop}'`;
+      if (calificacion !== "TOTS")
+        filter += ` AND ordenacion='${calificacion}'`;
+
+      this.querySistemas(
+        "Espacio libre (Sistema Local) (PGOU98)",
+        "slocal_espacioslibres_publicos",
+        filter
+      );
+    }
+
+    if (tipo == "SGEL") {
+			const div = document.getElementById("divOptionsQUERY_PGOU98");
+			const ext_prop = div.querySelector("#selectEP").value;
+			const calificacion = div.querySelector("#selectCALIFIC").value;
+
+      if (ext_prop !== "TOTS") filter += ` AND ext_prop='${ext_prop}'`;
+      if (calificacion !== "TOTS")
+        filter += ` AND ordenacion='${calificacion}'`;
+
+      this.querySistemas(
+        "Espacio libre (Sistema General) (PGOU98)",
+        "sgeneral_espacioslibres",
+        filter
+      );
+    }
+
+    if (tipo == "SLCI") {
+			const div = document.getElementById("divOptionsQUERY_PGOU98");
+			const ext_prop = div.querySelector("#selectEP").value;
+			const dominio = div.querySelector("#selectDOMINIO").value;
+			const uso_dot = div.querySelector("#selectUSO_DOT").value;
+
+      if (ext_prop !== "TOTS") filter += ` AND ext_prop='${ext_prop}'`;
+      if (dominio !== "TOTS") filter += ` AND domini='${dominio}'`;
+      if (uso_dot !== "TOTS") filter += ` AND uso2='${uso_dot}'`;
+
+      this.querySistemas(
+        "Comunicaciones e Infraestructuras (Sistema Local) (PGOU98)",
+        "slocal_comunicaciones_infraestructuras",
+        filter
+      );
+    }
+
+    if (tipo == "SGCI") {
+      const div = document.getElementById("divOptionsQUERY_PGOU98");
+			const ext_prop = div.querySelector("#selectEP").value;
+			const dominio = div.querySelector("#selectDOMINIO").value;
+			const uso_dot = div.querySelector("#selectUSO_DOT").value;
+
+      if (ext_prop !== "TOTS") filter += ` AND ext_prop='${ext_prop}'`;
+      if (dominio !== "TOTS") filter += ` AND domini='${dominio}'`;
+      if (uso_dot !== "TOTS") filter += ` AND uso2='${uso_dot}'`;
+
+      this.querySistemas(
+        "Comunicaciones e Infraestructuras (Sistema General) (PGOU98)",
+        "sgeneral_comunicaciones_infraestructuras",
+        filter
+      );
+    }
+
+    if (tipo == "CAT") {
+      const div = document.getElementById("divOptionsQUERY_PGOU98");
+			const proteccion = div.querySelector("#selectPROT").value;
+			const declaracion = div.querySelector("#selectDEC").value;
+			const categoria = div.querySelector("#selectCATEG").value;
+      const tipologia = div.querySelector("#selectTIP").value;
+			const clasificacion = div.querySelector("#selectCLAS").value;
+
+      if (proteccion !== "TOTS") filter += ` AND proteccion='${proteccion}'`;
+      if (declaracion !== "TOTS") filter += ` AND declaracion='${declaracion}'`;
+      if (categoria !== "TOTS") filter += ` AND categoria='${categoria}'`;
+      if (tipologia !== "TOTS") filter += ` AND tipologia='${tipologia}'`;
+      if (clasificacion !== "TOTS")
+        filter += ` AND clasificacion='${clasificacion}'`;
+
+      this.queryCAT("Catalogos (PGOU98)", "catalogos", filter);
+    }
+
+    if (tipo == "CAT_ACT") {
+      const div = document.getElementById("divOptionsQUERY_PGOU98");
+			const proteccion = div.querySelector("#selectPROT").value;
+			const categoria = div.querySelector("#selectCATEG").value;
+      const us_acual = div.querySelector("#selectUS").value;
+
+      if (proteccion !== "TOTS") filter += ` AND proteccion='${proteccion}'`;
+      if (categoria !== "TOTS") filter += ` AND categoria='${categoria}'`;
+      if (us_acual !== "TOTS") filter += ` AND us_actual='${us_acual}'`;
+
+      this.queryCAT_ACT(
+        "Catalogos (actualización)(PGOU98)",
+        "catalogos_actualizacion",
+        filter
+      );
+    }
+
+    if (tipo == "CH") {
+      const div = document.getElementById("divOptionsQUERY_PGOU98");
+			const proteccion = div.querySelector("#selectCALIF").value;
+
+      if (proteccion !== "TOTS") filter += ` AND codigo like '${proteccion}%'`;
+
+      this.queryRSD(
+        "Zonas centro historico (N/R) (PGOU98)",
+        "zonas_centro_historico",
+        filter
+      );
+    }
+
+    if (tipo == "r") {
+			const elemOptions = document.getElementById("divOptionsQUERY_PGOU98");
+    	elemOptions.innerHTML = "";
+			
+      this.queryRSD(
+        "Preservacion (r) (PGOU98)",
+        "proteccion_arquitectonica",
+        filter
+      );
+    }
+
+		if (tipo == "UE") {
+			const elemOptions = document.getElementById("divOptionsQUERY_PGOU98");
+    	elemOptions.innerHTML = "";
+
+      this.queryUE(
+        "Unidad de ejecución (PGOU98)",
+        "unidad_ejecucion",
+        filter
+      );
+    }
+
+		if (tipo == "API") {
+			const elemOptions = document.getElementById("divOptionsQUERY_PGOU98");
+    	elemOptions.innerHTML = "";
+
+      this.queryRSD(
+        "Area de planeamiento incorporado (PGOU98)",
+        "api",
+        filter
+      );
+    }
+
+		if (tipo == "ARE") {
+			const elemOptions = document.getElementById("divOptionsQUERY_PGOU98");
+    	elemOptions.innerHTML = "";
+
+      this.queryRSD(
+        "Area de régimen especial (PGOU98)",
+        "area_regimen_especial",
+        filter
+      );
+    }
+
+    if (tipo == "NADA") {
+			const elemOptions = document.getElementById("divOptionsQUERY_PGOU98");
+    	elemOptions.innerHTML = "";
+      const elemQuery = document.getElementById("divQUERY_PGOU98");
+    	elemQuery.innerHTML = "";
+      
+    }
+  }
+
+  async setOptionsQUERY() {
+    const elemTables = document.getElementById("selectTablesPGOU98");
+    const tipo = elemTables.value;
+
+    console.log(tipo);
+
+    switch (tipo) {
+      case "NADA":
+        this.changeQUERY();
+        break;
+      case "RSD":
+        await this.setOptionsRSD();
+        break;
+      case "RSD_NE":
+        await this.setOptionsRSD_NE();
+        break;
+      case "SEC":
+        await this.setOptionsSEC();
+        break;
+      case "TER":
+        await this.setOptionsTER();
+        break;
+      case "SLEC":
+      case "SGEC":
+        await this.setOptionsEQ();
+        break;
+      case "SLEL":
+      case "SGEL":
+        await this.setOptionsEL();
+        break;
+      case "SLCI":
+      case "SGCI":
+        await this.setOptionsCI();
+        break;
+      case "CAT":
+        await this.setOptionsCAT();
+        break;
+      case "CAT_ACT":
+        await this.setOptionsCAT_ACT();
+        break;
+      case "CH":
+        await this.setOptionsCH();
+        break;
+      case "r":
+        this.changeQUERY();
+        break;
+      case "UE":
+        this.changeQUERY();
+        break;
+      case "API":
+        this.changeQUERY();
+        break;
+      case "ARE":
+        this.changeQUERY();
+        break;
+    }
+
+    this.changeQUERY();
+  }
+
+  async setOptionsCH() {
+    const strOptionsCALIF = `
+        &lt;option value="TOTS" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optTOTS_CH">TOTS&lt;/option>
+        &lt;option value="R" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optR">(R) Preservació arquitectònica ambiental&lt;/option>
+        &lt;option value="N" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optN">(N) Preservació ambiental&lt;/option>
+         
+        `;
+
+    const strSelectCALIF = `&lt;select  style='background-color:#e6e6e6;padding:2px;font-size:8pt;font-family:Arial;width:98%;height:20px;overflow: scroll' name="select" id="selectCALIF" >
+            ${strOptionsCALIF}
+        &lt;/select>`;
+
+    const html = `
+		&lt;TABLE style='padding:3px;font-size:9px;font-family:Arial;color:#000000;width:100%;height:10px'  BORDER=0  bgcolor="#cfd7e7" BORDERCOLOR="grey" CELLPADDING=3 CELLSPACING=1>
+		
+				&lt;tr align="left" bgcolor="white" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+						&lt;td style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>PROTECCIÓN&lt;/label>&lt;/td>
+						&lt;td>${strSelectCALIF}&lt;/td>			
+				&lt;/tr>  
+				
+		&lt;/TABLE>`;
+
+    var elemOptions = document.getElementById("divOptionsQUERY_PGOU98");
+    elemOptions.innerHTML = html;
+
+    const self = this;
+    const elem = elemOptions.querySelectorAll("select[name='select']");
+    for (const select of elem) {
+      select.onchange = function () {
+        console.log("change option");
+        self.changeQUERY();
+      };
+    }
+  }
+
+  async setOptionsCAT_ACT() {
+    let strOptionsPROT = `&lt;option value="TOTS" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optTOTS_ORD">TOTS&lt;/option>`;
+    const reader = new DataReader();
+    let infoPROT = await reader.selectSQL(
+      "SELECT proteccion from catalogos_act_proteccion order by proteccion"
+    );
+    infoPROT.forEach((item) => {
+      strOptionsPROT += `&lt;option value="${item.proteccion}" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="opt${item.proteccion}">${item.proteccion}&lt;/option>`;
+    });
+
+    let strOptionsCATEG = `&lt;option value="TOTS" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optTOTS_ORD">TOTS&lt;/option>`;
+    let infoCATEG = await reader.selectSQL(
+      "SELECT categoria from catalogos_act_categoria order by categoria"
+    );
+    infoCATEG.forEach((item) => {
+      strOptionsCATEG += `&lt;option value="${item.categoria}" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="opt${item.categoria}">${item.categoria}&lt;/option>`;
+    });
+
+    let infoUS = await reader.selectSQL(
+      "SELECT us_actual from catalogos_actualizacion group by us_actual  order by us_actual"
+    );
+    let strOptionsUS = `&lt;option value="TOTS" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optTOTS_US">TOTS&lt;/option>`;
+
+    infoUS.forEach((item) => {
+      strOptionsUS += `
+              &lt;option value="${item.us_actual}" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="opt${item.us_actual}">
+                ${item.us_actual}
+              &lt;/option>`;
+    });
+
+    //console.log(infoPROT);
+    //console.log(infoCATEG);
+
+    const strSelectPROT = `&lt;select  style='background-color:#e6e6e6;padding:2px;font-size:8pt;font-family:Arial;width:98%;height:20px;overflow: scroll' name="select" id="selectPROT" >
+            ${strOptionsPROT}
+        &lt;/select>`;
+    const strSelectCATEG = `&lt;select  style='background-color:#e6e6e6;padding:2px;font-size:8pt;font-family:Arial;width:98%;height:20px;overflow: scroll' name="select" id="selectCATEG" >
+						${strOptionsCATEG}
+				&lt;/select>`;
+    const strSelectUS = `&lt;select  style='background-color:#e6e6e6;padding:2px;font-size:8pt;font-family:Arial;width:98%;height:20px;overflow: scroll' name="select" id="selectUS" >
+						${strOptionsUS}
+				&lt;/select>`;
+
+    const html = `
+		&lt;TABLE style='padding:3px;font-size:9px;font-family:Arial;color:#000000;width:100%;height:10px'  BORDER=0  bgcolor="#cfd7e7" BORDERCOLOR="grey" CELLPADDING=3 CELLSPACING=1>
+		
+				&lt;tr align="left" bgcolor="white" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+						&lt;td style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>PROTECCIÓN&lt;/label>&lt;/td>
+						&lt;td>${strSelectPROT}&lt;/td>			
+				&lt;/tr>  
+				&lt;tr align="left" bgcolor="white" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+						&lt;td style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>CATEGORÍA&lt;/label>&lt;/td>
+						&lt;td>${strSelectCATEG}&lt;/td>			
+				&lt;/tr>  
+				&lt;tr align="left" bgcolor="white" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+						&lt;td style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>USO ACTUAL&lt;/label>&lt;/td>
+						&lt;td>${strSelectUS}&lt;/td>			
+				&lt;/tr>  
+		
+		&lt;/TABLE>`;
+
+    var elemOptions = document.getElementById("divOptionsQUERY_PGOU98");
+    elemOptions.innerHTML = html;
+
+    const self = this;
+    const elem = elemOptions.querySelectorAll("select[name='select']");
+    for (const select of elem) {
+      select.onchange = function () {
+        console.log("change option");
+        self.changeQUERY();
+      };
+    }
+  }
+
+  async setOptionsCAT() {
+    let strOptionsPROT = `&lt;option value="TOTS" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optTOTS_ORD">TOTS&lt;/option>`;
+    const reader = new DataReader();
+    let infoPROT = await reader.selectSQL(
+      "SELECT proteccio,descripcio from catalogo_proteccio order by proteccio"
+    );
+    infoPROT.forEach((item) => {
+      strOptionsPROT += `&lt;option value="${item.proteccio}" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="opt${item.proteccio}">${item.descripcio}&lt;/option>`;
+    });
+
+    let strOptionsDEC = `&lt;option value="TOTS" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optTOTS_ORD">TOTS&lt;/option>`;
+    //reader = new DataReader();
+    let infoDEC = await reader.selectSQL(
+      "SELECT valor from catalogo_declaracio order by valor"
+    );
+    infoDEC.forEach((item) => {
+      strOptionsDEC += `&lt;option value="${item.valor}" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="opt${item.valor}">${item.valor}&lt;/option>`;
+    });
+
+    let strOptionsCATEG = `&lt;option value="TOTS" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optTOTS_ORD">TOTS&lt;/option>`;
+    let infoCATEG = await reader.selectSQL(
+      "SELECT valor from catalogo_categ order by valor"
+    );
+    infoCATEG.forEach((item) => {
+      strOptionsCATEG += `&lt;option value="${item.valor}" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="opt${item.valor}">${item.valor}&lt;/option>`;
+    });
+
+    let strOptionsTIP = `&lt;option value="TOTS" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optTOTS_ORD">TOTS&lt;/option>`;
+    let infoTIP = await reader.selectSQL(
+      "SELECT valor from catalogo_tipologia order by valor"
+    );
+    infoTIP.forEach((item) => {
+      strOptionsTIP += `&lt;option value="${item.valor}" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="opt${item.valor}">${item.valor}&lt;/option>`;
+    });
+
+    let strOptionsCLAS = `&lt;option value="TOTS" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optTOTS_ORD">TOTS&lt;/option>`;
+    let infoCLAS = await reader.selectSQL(
+      "SELECT valor from catalogo_clasificacion order by valor"
+    );
+    infoCLAS.forEach((item) => {
+      strOptionsCLAS += `&lt;option value="${item.valor}" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="opt${item.valor}">${item.valor}&lt;/option>`;
+    });
+
+    const strSelectPROT = `&lt;select  style='background-color:#e6e6e6;padding:2px;font-size:8pt;font-family:Arial;width:98%;height:20px;overflow: scroll' name="select" id="selectPROT" >
+            ${strOptionsPROT}
+        &lt;/select>`;
+    const strSelectDEC = `&lt;select  style='background-color:#e6e6e6;padding:2px;font-size:8pt;font-family:Arial;width:98%;height:20px;overflow: scroll' name="select" id="selectDEC" >
+						${strOptionsDEC}
+				&lt;/select>`;
+    const strSelectTIP = `&lt;select  style='background-color:#e6e6e6;padding:2px;font-size:8pt;font-family:Arial;width:98%;height:20px;overflow: scroll' name="select" id="selectTIP" >
+						${strOptionsTIP}
+				&lt;/select>`;
+    const strSelectCATEG = `&lt;select  style='background-color:#e6e6e6;padding:2px;font-size:8pt;font-family:Arial;width:98%;height:20px;overflow: scroll' name="select" id="selectCATEG" >
+						${strOptionsCATEG}
+				&lt;/select>`;
+    const strSelectCLAS = `&lt;select  style='background-color:#e6e6e6;padding:2px;font-size:8pt;font-family:Arial;width:98%;height:20px;overflow: scroll' name="select" id="selectCLAS" >
+						${strOptionsCLAS}
+				&lt;/select>`;
+
+    const html = `
+		&lt;TABLE style='padding:3px;font-size:9px;font-family:Arial;color:#000000;width:100%;height:10px'  BORDER=0  bgcolor="#cfd7e7" BORDERCOLOR="grey" CELLPADDING=3 CELLSPACING=1>
+		
+				&lt;tr align="left" bgcolor="white" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+						&lt;td style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>PROTECCIÓN&lt;/label>&lt;/td>
+						&lt;td>${strSelectPROT}&lt;/td>			
+				&lt;/tr>  
+				&lt;tr align="left" bgcolor="white" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+						&lt;td style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>DECLARACIÓN&lt;/label>&lt;/td>
+						&lt;td>${strSelectDEC}&lt;/td>			
+				&lt;/tr>  
+				&lt;tr align="left" bgcolor="white" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+						&lt;td style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>CATEGORÍA&lt;/label>&lt;/td>
+						&lt;td>${strSelectCATEG}&lt;/td>			
+				&lt;/tr>  
+				&lt;tr align="left" bgcolor="white" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+						&lt;td style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>TIPOLOGÍA&lt;/label>&lt;/td>
+						&lt;td>${strSelectTIP}&lt;/td>			
+				&lt;/tr> 
+				&lt;tr align="left" bgcolor="white" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+						&lt;td style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>CLASIFICACIÓN&lt;/label>&lt;/td>
+						&lt;td>${strSelectCLAS}&lt;/td>			
+				&lt;/tr>  	
+		
+		&lt;/TABLE>`;
+
+    var elemOptions = document.getElementById("divOptionsQUERY_PGOU98");
+    elemOptions.innerHTML = html;
+
+    const self = this;
+    const elem = elemOptions.querySelectorAll("select[name='select']");
+    for (const select of elem) {
+      select.onchange = function () {
+        console.log("change option");
+        self.changeQUERY();
+      };
+    }
+  }
+
+  async setOptionsCI() {
+    const strOptionsEP = `
+		&lt;option value="TOTS" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optTOTS_EP">TOTS&lt;/option>
+		&lt;option value="E" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optE">EXISTENTE&lt;/option>
+		&lt;option value="P" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optP">PROPUESTO&lt;/option>
+		`;
+
+    const strOptionsDOMINIO = `
+		&lt;option value="TOTS" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optTOTS_DM">TOTS&lt;/option>
+		&lt;option value="PÚBLIC" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optPBL">PÚBLICO&lt;/option>
+		&lt;option value="PRIVAT" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optPRV">PRIVADO&lt;/option>
+		`;
+
+    const strOptionsDOTACIONAL = `
+		&lt;option value="TOTS" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optTOTS_DM">TOTS&lt;/option>
+		&lt;option value="TC" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optTC">TC - COMUNICACIONES&lt;/option>
+		&lt;option value="IS" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optIS">IS - INSTALACIONES Y SERVICIOS&lt;/option>
+		`;
+
+    const strSelectEP = `&lt;select  style='background-color:#e6e6e6;padding:2px;font-size:8pt;font-family:Arial;width:98%;height:20px;overflow: scroll' name="select" id="selectEP" >
+            ${strOptionsEP}
+        &lt;/select>`;
+    const strSelectDOMINIO = `&lt;select  style='background-color:#e6e6e6;padding:2px;font-size:8pt;font-family:Arial;width:98%;height:20px;overflow: scroll' name="select" id="selectDOMINIO" >
+						${strOptionsDOMINIO}
+				&lt;/select>`;
+
+    const strSelectDOTACIONAL = `&lt;select  style='background-color:#e6e6e6;padding:2px;font-size:8pt;font-family:Arial;width:98%;height:20px;overflow: scroll' name="select" id="selectUSO_DOT" >
+						${strOptionsDOTACIONAL}
+				&lt;/select>`;
+
+    const html = `
+		&lt;TABLE style='padding:3px;font-size:9px;font-family:Arial;color:#000000;width:100%;height:10px'  BORDER=0  bgcolor="#cfd7e7" BORDERCOLOR="grey" CELLPADDING=3 CELLSPACING=1>
+		
+				&lt;tr align="left" bgcolor="white" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+						&lt;td style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>EXISTENTE/PROPUESTO&lt;/label>&lt;/td>
+						&lt;td>${strSelectEP}&lt;/td>			
+				&lt;/tr>  
+				&lt;tr align="left" bgcolor="white" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+						&lt;td style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>DOMINIO&lt;/label>&lt;/td>
+						&lt;td>${strSelectDOMINIO}&lt;/td>			
+				&lt;/tr>  
+				&lt;tr align="left" bgcolor="white" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+						&lt;td style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>USO DOTACIONAL&lt;/label>&lt;/td>
+						&lt;td>${strSelectDOTACIONAL}&lt;/td>			
+				&lt;/tr>  
+		
+		&lt;/TABLE>`;
+
+    var elemOptions = document.getElementById("divOptionsQUERY_PGOU98");
+    elemOptions.innerHTML = html;
+
+    const self = this;
+    const elem = elemOptions.querySelectorAll("select[name='select']");
+    for (const select of elem) {
+      select.onchange = function () {
+        console.log("change option");
+        self.changeQUERY();
+      };
+    }
+  }
+
+  async setOptionsEL() {
+    const strOptionsEP = `
+		&lt;option value="TOTS" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optTOTS_EP">TOTS&lt;/option>
+		&lt;option value="E" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optE">EXISTENT&lt;/option>
+		&lt;option value="P" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optP">PROPOST&lt;/option>
+		`;
+
+    let strOptionsCALIFIC = `&lt;option value="TOTS" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optTOTS_DOT">TOTS&lt;/option>`;
+    const reader2 = new DataReader();
+    let info2 = await reader2.selectSQL(
+      "SELECT tipo,descripcion from calificacion_el_visor order by tipo"
+    );
+    info2.forEach((item) => {
+      strOptionsCALIFIC += `&lt;option value="${item.tipo}" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="opt${item.tipo}">${item.descripcion}&lt;/option>`;
+    });
+
+    const strSelectEP = `&lt;select  style='background-color:#e6e6e6;padding:2px;font-size:8pt;font-family:Arial;width:98%;height:20px;overflow: scroll' name="select" id="selectEP" >
+            ${strOptionsEP}
+        &lt;/select>`;
+
+    const strSelectCALIFIC = `&lt;select  style='background-color:#e6e6e6;padding:2px;font-size:8pt;font-family:Arial;width:98%;height:20px;overflow: scroll' name="select" id="selectCALIFIC" >
+		${strOptionsCALIFIC}
+&lt;/select>`;
+
+    const html = `
+		&lt;TABLE style='padding:3px;font-size:9px;font-family:Arial;color:#000000;width:100%;height:10px'  BORDER=0  bgcolor="#cfd7e7" BORDERCOLOR="grey" CELLPADDING=3 CELLSPACING=1>
+		
+				&lt;tr align="left" bgcolor="white" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+						&lt;td style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>EXISTENTE/PROPUESTO&lt;/label>&lt;/td>
+						&lt;td>${strSelectEP}&lt;/td>			
+				&lt;/tr>  
+				&lt;tr align="left" bgcolor="white" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+						&lt;td style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>CALIFICACIÓN&lt;/label>&lt;/td>
+						&lt;td>${strSelectCALIFIC}&lt;/td>			
+				&lt;/tr>  
+		
+		&lt;/TABLE>`;
+
+    var elemOptions = document.getElementById("divOptionsQUERY_PGOU98");
+    elemOptions.innerHTML = html;
+
+    const self = this;
+    const elem = elemOptions.querySelectorAll("select[name='select']");
+    for (const select of elem) {
+      select.onchange = function () {
+        console.log("change option");
+        self.changeQUERY();
+      };
+    }
+  }
+
+  async setOptionsEQ() {
+    const strOptionsEP = `
+		&lt;option value="TOTS" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optTOTS_EP">TOTS&lt;/option>
+		&lt;option value="E" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optE">EXISTENT&lt;/option>
+		&lt;option value="P" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optP">PROPOST&lt;/option>
+		`;
+
+    const strOptionsDOMINIO = `
+		&lt;option value="TOTS" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optTOTS_DM">TOTS&lt;/option>
+		&lt;option value="PÚBLIC" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optPBL">PÚBLIC&lt;/option>
+		&lt;option value="PRIVAT" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optPRV">PRIVAT&lt;/option>
+		`;
+
+    let strOptionsDOTACIONAL = `&lt;option value="TOTS" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optTOTS_DOT">TOTS&lt;/option>`;
+    const reader = new DataReader();
+    let info = await reader.selectSQL(
+      "SELECT uso,descripcion_uso from usodot_eq_visor order by descripcion_uso"
+    );
+    info.forEach((item) => {
+      strOptionsDOTACIONAL += `&lt;option value="${item.uso}" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="opt${item.uso}">${item.descripcion_uso}&lt;/option>`;
+    });
+
+    let strOptionsCALIFIC = `&lt;option value="TOTS" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optTOTS_DOT">TOTS&lt;/option>`;
+    const reader2 = new DataReader();
+    let info2 = await reader2.selectSQL(
+      "SELECT codigo from calificacion_eq_visor order by codigo"
+    );
+    info2.forEach((item) => {
+      strOptionsCALIFIC += `&lt;option value="${item.codigo}" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="opt${item.codigo}">${item.codigo}&lt;/option>`;
+    });
+
+    const strSelectEP = `&lt;select  style='background-color:#e6e6e6;padding:2px;font-size:8pt;font-family:Arial;width:98%;height:20px;overflow: scroll' name="select" id="selectEP" >
+            ${strOptionsEP}
+        &lt;/select>`;
+    const strSelectDOMINIO = `&lt;select  style='background-color:#e6e6e6;padding:2px;font-size:8pt;font-family:Arial;width:98%;height:20px;overflow: scroll' name="select" id="selectDOMINIO" >
+						${strOptionsDOMINIO}
+				&lt;/select>`;
+    const strSelectDOTACIONAL = `&lt;select  style='background-color:#e6e6e6;padding:2px;font-size:8pt;font-family:Arial;width:98%;height:20px;overflow: scroll' name="select" id="selectUSO_DOT" >
+				${strOptionsDOTACIONAL}
+		&lt;/select>`;
+    const strSelectCALIFIC = `&lt;select  style='background-color:#e6e6e6;padding:2px;font-size:8pt;font-family:Arial;width:98%;height:20px;overflow: scroll' name="select" id="selectCALIFIC" >
+		${strOptionsCALIFIC}
+&lt;/select>`;
+
+    const html = `
+		&lt;TABLE style='padding:3px;font-size:9px;font-family:Arial;color:#000000;width:100%;height:10px'  BORDER=0  bgcolor="#cfd7e7" BORDERCOLOR="grey" CELLPADDING=3 CELLSPACING=1>
+		
+				&lt;tr align="left" bgcolor="white" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+						&lt;td style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>EXISTENTE/PROPUESTO&lt;/label>&lt;/td>
+						&lt;td>${strSelectEP}&lt;/td>			
+				&lt;/tr>  
+				&lt;tr align="left" bgcolor="white" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+						&lt;td style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>DOMINIO&lt;/label>&lt;/td>
+						&lt;td>${strSelectDOMINIO}&lt;/td>			
+				&lt;/tr> 
+				&lt;tr align="left" bgcolor="white" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+						&lt;td style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>USO DOTACIONAL&lt;/label>&lt;/td>
+						&lt;td>${strSelectDOTACIONAL}&lt;/td>			
+				&lt;/tr>  
+				&lt;tr align="left" bgcolor="white" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+						&lt;td style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>CALIFICACIÓN&lt;/label>&lt;/td>
+						&lt;td>${strSelectCALIFIC}&lt;/td>			
+				&lt;/tr>  
+		
+		&lt;/TABLE>`;
+
+    var elemOptions = document.getElementById("divOptionsQUERY_PGOU98");
+    elemOptions.innerHTML = html;
+
+    const self = this;
+		const elem = elemOptions.querySelectorAll("select[name='select']");
+		console.log("select:",elem);
+    for (const select of elem) {
+      select.onchange = function () {
+        console.log("change option");
+        self.changeQUERY();
+      };
+    }
+  }
+
+  async setOptionsTER() {
+    let strOptionsTIPO = `&lt;option value="TOTS" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optTOTS_ORD">TOTS&lt;/option>`;
+    const reader = new DataReader();
+    let info = await reader.selectSQL(
+      "SELECT tipo_zona from tipos_zonas where entidad='TER' order by tipo_zona"
+    );
+    info.forEach((item) => {
+      strOptionsTIPO += `&lt;option value="${item.tipo_zona}" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="opt${item.tipo_zona}">${item.tipo_zona}&lt;/option>`;
+    });
+
+    let strOptionsCALIF = `&lt;option value="TOTS" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optTOTS_CALIF">TOTS&lt;/option>`;
+    const reader2 = new DataReader();
+    info = await reader2.selectSQL(
+      "SELECT codigo from calificacion_terciario_visor  order by codigo"
+    );
+    info.forEach((item) => {
+      strOptionsCALIF += `&lt;option value="${item.codigo}" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="opt${item.codigo}">${item.codigo}&lt;/option>`;
+    });
+
+    const strSelectTIPO = `&lt;select  style='background-color:#e6e6e6;padding:2px;font-size:8pt;font-family:Arial;width:98%;height:20px;overflow: scroll' name="select" id="selectTIPO" >
+            ${strOptionsTIPO}
+        &lt;/select>`;
+    const strSelectCALIF = `&lt;select  style='background-color:#e6e6e6;padding:2px;font-size:8pt;font-family:Arial;width:98%;height:20px;overflow: scroll' name="select" id="selectCALIF" >
+						${strOptionsCALIF}
+				&lt;/select>`;
+
+    const html = `
+		&lt;TABLE style='padding:3px;font-size:9px;font-family:Arial;color:#000000;width:100%;height:10px'  BORDER=0  bgcolor="#cfd7e7" BORDERCOLOR="grey" CELLPADDING=3 CELLSPACING=1>
+		
+				&lt;tr align="left" bgcolor="white" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+						&lt;td style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>TIPO CALIFICACIÓN&lt;/label>&lt;/td>
+						&lt;td>${strSelectTIPO}&lt;/td>			
+				&lt;/tr>  
+				&lt;tr align="left" bgcolor="white" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+						&lt;td style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>CALIFICACIÓN&lt;/label>&lt;/td>
+						&lt;td>${strSelectCALIF}&lt;/td>			
+				&lt;/tr>  
+		
+		&lt;/TABLE>`;
+
+    var elemOptions = document.getElementById("divOptionsQUERY_PGOU98");
+    elemOptions.innerHTML = html;
+
+    const self = this;
+    const elem = elemOptions.querySelectorAll("select[name='select']");
+    for (const select of elem) {
+      select.onchange = function () {
+        console.log("change option");
+        self.changeQUERY();
+      };
+    }
+  }
+
+  async setOptionsSEC() {
+    let strOptionsTIPO = `&lt;option value="TOTS" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optTOTS_ORD">TOTS&lt;/option>`;
+    const reader = new DataReader();
+    let info = await reader.selectSQL(
+      "SELECT tipo_zona from tipos_zonas where entidad='SEC' order by tipo_zona"
+    );
+    info.forEach((item) => {
+      strOptionsTIPO += `&lt;option value="${item.tipo_zona}" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="opt${item.tipo_zona}">${item.tipo_zona}&lt;/option>`;
+    });
+
+    let strOptionsCALIF = `&lt;option value="TOTS" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optTOTS_CALIF">TOTS&lt;/option>`;
+    const reader2 = new DataReader();
+    info = await reader2.selectSQL(
+      "SELECT codigo from calificacion_secundario_visor  order by codigo"
+    );
+    info.forEach((item) => {
+      strOptionsCALIF += `&lt;option value="${item.codigo}" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="opt${item.codigo}">${item.codigo}&lt;/option>`;
+    });
+
+    const strSelectTIPO = `&lt;select  style='background-color:#e6e6e6;padding:2px;font-size:8pt;font-family:Arial;width:98%;height:20px;overflow: scroll' name="select" id="selectTIPO" >
+            ${strOptionsTIPO}
+        &lt;/select>`;
+    const strSelectCALIF = `&lt;select  style='background-color:#e6e6e6;padding:2px;font-size:8pt;font-family:Arial;width:98%;height:20px;overflow: scroll' name="select" id="selectCALIF" >
+						${strOptionsCALIF}
+				&lt;/select>`;
+
+    const html = `
+		&lt;TABLE style='padding:3px;font-size:9px;font-family:Arial;color:#000000;width:100%;height:10px'  BORDER=0  bgcolor="#cfd7e7" BORDERCOLOR="grey" CELLPADDING=3 CELLSPACING=1>
+		
+				&lt;tr align="left" bgcolor="white" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+						&lt;td style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>TIPO CALIFICACIÓN&lt;/label>&lt;/td>
+						&lt;td>${strSelectTIPO}&lt;/td>			
+				&lt;/tr>  
+				&lt;tr align="left" bgcolor="white" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+						&lt;td style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>CALIFICACIÓN&lt;/label>&lt;/td>
+						&lt;td>${strSelectCALIF}&lt;/td>			
+				&lt;/tr>  
+		
+		&lt;/TABLE>`;
+
+    var elemOptions = document.getElementById("divOptionsQUERY_PGOU98");
+    elemOptions.innerHTML = html;
+
+    const self = this;
+    const elem = elemOptions.querySelectorAll("select[name='select']");
+    for (const select of elem) {
+      select.onchange = function () {
+        console.log("change option");
+        self.changeQUERY();
+      };
+    }
+  }
+
+  async setOptionsRSD_NE() {
+    let strOptionsTIPO = `&lt;option value="TOTS" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optTOTS_ORD">TOTS&lt;/option>`;
+    const reader = new DataReader();
+    let info = await reader.selectSQL(
+      "SELECT tipo_zona from tipos_zonas where entidad='RES' order by tipo_zona"
+    );
+    info.forEach((item) => {
+      strOptionsTIPO += `&lt;option value="${item.tipo_zona}" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="opt${item.tipo_zona}">${item.tipo_zona}&lt;/option>`;
+    });
+
+    let strOptionsCALIF = `&lt;option value="TOTS" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optTOTS_CALIF">TOTS&lt;/option>`;
+    const reader2 = new DataReader();
+    info = await reader2.selectSQL(
+      "SELECT codigo from calificacion_residencial_visor  order by codigo"
+    );
+    info.forEach((item) => {
+      strOptionsCALIF += `&lt;option value="${item.codigo}" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="opt${item.codigo}">${item.codigo}&lt;/option>`;
+    });
+
+    const strOptionsTIPO_ORD = `
+            &lt;option value="TOTS" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optTOTS_TIPO_ORD">TOTS&lt;/option>
+            &lt;option value="RES_AVMCV" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optRES_AVMCV">RESID. PLURIFAMILIAR AV-MC.V. (A.B.C)&lt;/option>
+            &lt;option value="RES_AVMCR" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optRES_AVMCR">RESID. PLURIFAMILIAR AV-MC.R. (D,H)&lt;/option>
+            &lt;option value="RES_P_RP" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optRES_P_RP">RESID. PLURIFAMILIAR RP. (E,G)&lt;/option>
+            &lt;option value="RES_U_RPA" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optRES_U_RPA">RESID. UNIFAMILIAR RP. A. (I)&lt;/option>
+            &lt;option value="RES_U_RPS" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optRES_U_RPS">RESID. UNIFAMILIAR RP. S. (J)&lt;/option>
+        
+            `;
+
+    const strSelectTIPO = `&lt;select  style='background-color:#e6e6e6;padding:2px;font-size:8pt;font-family:Arial;width:98%;height:20px;overflow: scroll' name="select" id="selectTIPO" >
+            ${strOptionsTIPO}
+        &lt;/select>`;
+    const strSelectTIPO_ORD = `&lt;select  style='background-color:#e6e6e6;padding:2px;font-size:8pt;font-family:Arial;width:98%;height:20px;overflow: scroll' name="select" id="selectTIPO_ORD" >
+						${strOptionsTIPO_ORD}
+				&lt;/select>`;
+    const strSelectCALIF = `&lt;select  style='background-color:#e6e6e6;padding:2px;font-size:8pt;font-family:Arial;width:98%;height:20px;overflow: scroll' name="select" id="selectCALIF" >
+						${strOptionsCALIF}
+				&lt;/select>`;
+
+    const html = `
+		&lt;TABLE style='padding:3px;font-size:9px;font-family:Arial;color:#000000;width:100%;height:10px'  BORDER=0  bgcolor="#cfd7e7" BORDERCOLOR="grey" CELLPADDING=3 CELLSPACING=1>
+		
+				&lt;tr align="left" bgcolor="white" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+						&lt;td style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>TIPO ORDENACIÓN&lt;/label>&lt;/td>
+						&lt;td>${strSelectTIPO_ORD}&lt;/td>			
+				&lt;/tr>  
+				&lt;tr align="left" bgcolor="white" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+						&lt;td style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>TIPO CALIFICACIÓN&lt;/label>&lt;/td>
+						&lt;td>${strSelectTIPO}&lt;/td>			
+				&lt;/tr>  
+				&lt;tr align="left" bgcolor="white" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+						&lt;td style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>CALIFICACIÓN&lt;/label>&lt;/td>
+						&lt;td>${strSelectCALIF}&lt;/td>			
+				&lt;/tr>  
+		
+		&lt;/TABLE>`;
+
+    var elemOptions = document.getElementById("divOptionsQUERY_PGOU98");
+    elemOptions.innerHTML = html;
+
+    const self = this;
+    const elem = elemOptions.querySelectorAll("select[name='select']");
+    for (const select of elem) {
+      select.onchange = function () {
+        console.log("change option");
+        self.changeQUERY();
+      };
+    }
+  }
+
+  async setOptionsRSD() {
+    let strOptionsTIPO = `&lt;option value="TOTS" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optTOTS_ORD">TOTS&lt;/option>`;
+    const reader = new DataReader();
+    let info = await reader.selectSQL(
+      "SELECT tipo_zona from tipos_zonas where entidad='RES' order by tipo_zona"
+    );
+    info.forEach((item) => {
+      strOptionsTIPO += `&lt;option value="${item.tipo_zona}" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="opt${item.tipo_zona}">${item.tipo_zona}&lt;/option>`;
+    });
+
+    let strOptionsCALIF = `&lt;option value="TOTS" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optTOTS_CALIF">TOTS&lt;/option>`;
+    const reader2 = new DataReader();
+    info = await reader2.selectSQL(
+      "SELECT codigo from calificacion_residencial_visor  order by codigo"
+    );
+    info.forEach((item) => {
+      strOptionsCALIF += `&lt;option value="${item.codigo}" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="opt${item.codigo}">${item.codigo}&lt;/option>`;
+    });
+
+    const strOptionsTIPO_ORD = `
+            &lt;option value="TOTS" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optTOTS_TIPO_ORD">TOTS&lt;/option>
+            &lt;option value="RES_AVMCV" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optRES_AVMCV">RESID. PLURIFAMILIAR AV-MC.V. (A.B.C)&lt;/option>
+            &lt;option value="RES_AVMCR" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optRES_AVMCR">RESID. PLURIFAMILIAR AV-MC.R. (D,H)&lt;/option>
+            &lt;option value="RES_P_RP" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optRES_P_RP">RESID. PLURIFAMILIAR RP. (E,G)&lt;/option>
+            &lt;option value="RES_U_RPA" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optRES_U_RPA">RESID. UNIFAMILIAR RP. A. (I)&lt;/option>
+            &lt;option value="RES_U_RPS" style='font-size:7.5pt.5pt;font-family:Arial;color:#660000' id="optRES_U_RPS">RESID. UNIFAMILIAR RP. S. (J)&lt;/option>
+        
+            `;
+
+    const html_altura = `
+			&lt;TABLE style='padding:3px;font-size:9px;font-family:Arial;color:#000000;width:100%;height:10px'  BORDER=0  bgcolor="#cfd7e7" BORDERCOLOR="grey" CELLPADDING=3 CELLSPACING=1>
+					
+				&lt;thead style="background-color:#e1eefb">
+					&lt;tr>
+							&lt;th align="left">&lt;/td>            
+							&lt;th align="left" style="padding:3px;font-size:9.5px;font-family:Arial black;color:#000000">MAJOR O IGUAL&lt;/td>
+							&lt;th align="left" style="padding:3px;font-size:9.5px;font-family:Arial black;color:#000000">MENOR O IGUAL&lt;/td>                    
+					&lt;/tr>
+				&lt;/thead> 
+
+				&lt;tr align="left" bgcolor="white" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+						&lt;td style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>ALTURAS&lt;/label>&lt;/td>
+						&lt;td>&lt;input type="text" style="width:96%" id="alturaFirst" name="select">&lt;/td>
+						&lt;td>&lt;input type="text" style="width:96%" id="alturaEnd" name="select">&lt;/td>
+				&lt;/tr>
+					
+			&lt;/TABLE>`;
+
+    const strSelectTIPO = `&lt;select  style='background-color:#e6e6e6;padding:2px;font-size:8pt;font-family:Arial;width:98%;height:20px;overflow: scroll' name="select" id="selectTIPO" >
+            ${strOptionsTIPO}
+        &lt;/select>`;
+    const strSelectTIPO_ORD = `&lt;select  style='background-color:#e6e6e6;padding:2px;font-size:8pt;font-family:Arial;width:98%;height:20px;overflow: scroll' name="select" id="selectTIPO_ORD" >
+						${strOptionsTIPO_ORD}
+				&lt;/select>`;
+    const strSelectCALIF = `&lt;select  style='background-color:#e6e6e6;padding:2px;font-size:8pt;font-family:Arial;width:98%;height:20px;overflow: scroll' name="select" id="selectCALIF" >
+						${strOptionsCALIF}
+				&lt;/select>`;
+
+    const html = `
+		&lt;TABLE style='padding:3px;font-size:9px;font-family:Arial;color:#000000;width:100%;height:10px'  BORDER=0  bgcolor="#cfd7e7" BORDERCOLOR="grey" CELLPADDING=3 CELLSPACING=1>
+		
+				&lt;tr align="left" bgcolor="white" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+						&lt;td style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>TIPO ORDENACIÓN&lt;/label>&lt;/td>
+						&lt;td>${strSelectTIPO_ORD}&lt;/td>			
+				&lt;/tr>  
+				&lt;tr align="left" bgcolor="white" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+						&lt;td style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>TIPO CALIFICACIÓN&lt;/label>&lt;/td>
+						&lt;td>${strSelectTIPO}&lt;/td>			
+				&lt;/tr>  
+				&lt;tr align="left" bgcolor="white" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
+						&lt;td style='padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>CALIFICACIÓN&lt;/label>&lt;/td>
+						&lt;td>${strSelectCALIF}&lt;/td>			
+				&lt;/tr>  
+		
+		&lt;/TABLE>`;
+
+    var elemOptions = document.getElementById("divOptionsQUERY_PGOU98");
+    elemOptions.innerHTML = html + html_altura;
+
+    const self = this;
+   //const elem = elemOptions.querySelectorAll("select[name='select']");
+    const elem = elemOptions.querySelectorAll("input[name='select'], select[name='select']");
+    for (const select of elem) {
+      select.onchange = function () {
+        console.log("change option");
+        self.changeQUERY();
+      };
+    }
+  }
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Frontend.html">Frontend</a></li><li><a href="module-Router.html">Router</a></li></ul><h3>Namespaces</h3><ul><li><a href="SedipualbaController.html">SedipualbaController</a></li><li><a href="VisorController.html">VisorController</a></li></ul><h3>Classes</h3><ul><li><a href="module-Frontend.Asistente.html">Asistente</a></li><li><a href="module-Frontend.DataReader.html">DataReader</a></li><li><a href="module-Frontend.DataReaderSedipualb.html">DataReaderSedipualb</a></li><li><a href="module-Frontend.FeatureUrbanistic.html">FeatureUrbanistic</a></li><li><a href="module-Frontend.Form_CATALOGO_PGOU98.html">Form_CATALOGO_PGOU98</a></li><li><a href="module-Frontend.Form_PARAMETROS_CALIFICACIONES_PRI.html">Form_PARAMETROS_CALIFICACIONES_PRI</a></li><li><a href="module-Frontend.Form_PARAMETROS_EQ_PGOU98.html">Form_PARAMETROS_EQ_PGOU98</a></li><li><a href="module-Frontend.Form_PARAMETROS_RSD_PGOU98.html">Form_PARAMETROS_RSD_PGOU98</a></li><li><a href="module-Frontend.Form_PARAMETROS_SEC_PGOU98.html">Form_PARAMETROS_SEC_PGOU98</a></li><li><a href="module-Frontend.Form_PARAMETROS_TER_PGOU98.html">Form_PARAMETROS_TER_PGOU98</a></li><li><a href="module-Frontend.Form_PARAMETROS_VE_PGOU98.html">Form_PARAMETROS_VE_PGOU98</a></li><li><a href="module-Frontend.Form_SISTEMAS_PG2023.html">Form_SISTEMAS_PG2023</a></li><li><a href="module-Frontend.Form_SISTEMAS_PGOU98.html">Form_SISTEMAS_PGOU98</a></li><li><a href="module-Frontend.Form_SISTEMAS_PRI.html">Form_SISTEMAS_PRI</a></li><li><a href="module-Frontend.Form_UNIDAD_EJECUCION_PGOU98.html">Form_UNIDAD_EJECUCION_PGOU98</a></li><li><a href="module-Frontend.Form_UNIDAD_EJECUCION_PRI.html">Form_UNIDAD_EJECUCION_PRI</a></li><li><a href="module-Frontend.I18nHandler.html">I18nHandler</a></li><li><a href="module-Frontend.MapLayer.html">MapLayer</a></li><li><a href="module-Frontend.MapLayers.html">MapLayers</a></li><li><a href="module-Frontend.MapLayersVisor.html">MapLayersVisor</a></li><li><a href="module-Frontend.MapManager.html">MapManager</a></li><li><a href="module-Frontend.MapQuery.html">MapQuery</a></li><li><a href="module-Frontend.NormativaDialog.html">NormativaDialog</a></li><li><a href="module-Frontend.QueryDialog.html">QueryDialog</a></li><li><a href="module-Frontend.QueryDialogEXP.html">QueryDialogEXP</a></li><li><a href="module-Frontend.QueryDialogEXP_Planeamiento.html">QueryDialogEXP_Planeamiento</a></li><li><a href="module-Frontend.QueryDialogPG2023.html">QueryDialogPG2023</a></li><li><a href="module-Frontend.QueryDialogPGOU98.html">QueryDialogPGOU98</a></li><li><a href="module-Frontend.QueryDialogPRI.html">QueryDialogPRI</a></li><li><a href="module-Frontend.SIGDUMap.html">SIGDUMap</a></li><li><a href="module-Frontend.Sedipualb.html">Sedipualb</a></li><li><a href="module-Frontend.TOC.html">TOC</a></li></ul><h3>Global</h3><ul><li><a href="global.html#mainApp">mainApp</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a> on Sat Dec 16 2023 19:01:33 GMT+0100 (hora estándar de Europa central)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

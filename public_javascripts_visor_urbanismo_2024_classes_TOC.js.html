@@ -54,7 +54,9 @@ class TOC {
     this.htmTreeConsultas = ``;
     this.htmlTabsBase = ``;
     this.htmAccordion = ``;
+  }
 
+  async initialize() {
     this.createControls();
     this.createTreeOrdenacion();
     this.createSliderOrdenacion();
@@ -66,6 +68,33 @@ class TOC {
     this.createStyleConsultas();
 
     this._createAcoordion();
+  }
+
+  async setLayerAI() {
+    await this.mapLayers.setLayer_PA_aprobacion_inial();
+    //this.mapLayers.getMapLayerByName("layerPA_ai").getLayer().addTo(map);
+    const layerPA_ai = this.mapLayers
+      .getMapLayerByName("layerPA_ai")
+      .getLayer();
+
+    const self = this;
+
+    // Agregar el evento zoomend para controlar la visibilidad
+    this.map.on("zoomend", function () {
+      var isChecked = $("#jstree_ord").jstree(true).is_checked(4);
+      if (isChecked) {
+        const currentZoom = self.map.getZoom();
+        if (currentZoom >= 14 &amp;&amp; currentZoom &lt;= 22) {
+          if (!self.map.hasLayer(layerPA_ai)) {
+            self.map.addLayer(layerPA_ai);
+          }
+        } else {
+          if (self.map.hasLayer(layerPA_ai)) {
+            self.map.removeLayer(layerPA_ai);
+          }
+        }
+      }
+    });
   }
 
   /**
@@ -83,25 +112,25 @@ class TOC {
    */
   _createAcoordion() {
     this.htmAccordion = `&lt;div  id="accordion">		 
-				&lt;h3>MAPAS BASE&lt;/h3>
-					&lt;div style='padding:0px'>
-            ${this.htmStyleBaseMap}
-					  ${this.htmlTabsBase} 		
-					&lt;/div>
-				&lt;h3>ORDENACIÓN&lt;/h3>
-					&lt;div style='overflow: hidden;padding:0px'>
-            ${this.htmStyleOrdenacion}
-            ${this.htmTreeOrdenacion}
-					&lt;/div>
-        &lt;h3>CONSULTAS&lt;/h3>
-          &lt;div style='overflow: hidden;padding:0px'>
-            &lt;input style='font-size:7pt;height:20' class="ui-button ui-widget ui-corner-all" type="button" name="addLayersNormativa" value="BORRAR SELECCIONADOS" id="deleteSelectedConsultas" &lt;/input> 
-            &lt;button style="padding-top:0px;padding-bottom:1px;" class="ui-button ui-widget ui-corner-all" title="Descarga en formato geojson"  id="download_select_consultas">&lt;i class="fa fa-download">&lt;/i>&lt;/button>
-            &lt;!-- &lt;button style="font-size:8pt;padding-top:3px;padding-bottom:3px;" class="ui-button ui-widget ui-corner-all" title="Esborrar seleccionats" OnClick="deleteSelectedConsultas_vig()', 'text/plain')">&lt;img src="/images/icons_vsgis/delete16.png"> Esborrar &lt;/button> -->
-            ${this.htmlStyleConsultas}
-            
-            ${this.htmTreeConsultas}
-          &lt;/div>
+      &lt;h3 id="toc_mapas_base">MAPAS BASE&lt;/h3>
+        &lt;div style='padding:0px'>
+          ${this.htmStyleBaseMap}
+          ${this.htmlTabsBase} 		
+        &lt;/div>
+      &lt;h3 id="toc_ordenacion">ORDENACIÓN&lt;/h3>
+        &lt;div style='overflow: hidden;padding:0px'>
+          ${this.htmStyleOrdenacion}
+          ${this.htmTreeOrdenacion}
+        &lt;/div>
+      &lt;h3 id="toc_consultas">CONSULTAS&lt;/h3>
+        &lt;div style='overflow: hidden;padding:0px'>
+          &lt;input style='font-size:7pt;height:20' class="ui-button ui-widget ui-corner-all" type="button" name="addLayersNormativa" value="BORRAR SELECCIONADOS" id="deleteSelectedConsultas"> &lt;/input> 
+          &lt;button style="padding-top:0px;padding-bottom:1px;" class="ui-button ui-widget ui-corner-all" title="Descarga en formato geojson"  id="download_select_consultas">&lt;i class="fa fa-download">&lt;/i>&lt;/button>
+          
+          ${this.htmlStyleConsultas}
+          
+          ${this.htmTreeConsultas}
+        &lt;/div>
 		&lt;/div>`;
 
     if (!this._isMobile()) {
@@ -113,7 +142,7 @@ class TOC {
           height: "571px",
           //icon: "menu-icon",
         })
-        .addTo(map);
+        .addTo(this.map);
     } else {
       L.control
         .slideMenu(this.htmAccordion, {
@@ -123,7 +152,7 @@ class TOC {
           height: "571px",
           //icon: "menu-icon",
         })
-        .addTo(map);
+        .addTo(this.map);
     }
 
     const self = this;
@@ -157,63 +186,63 @@ class TOC {
     const data = [
       {
         id: "1_1",
-        text: '&lt;Label style="font-size:8pt">&lt;i>(AANP) Àrees naturals d`especial interès d`alt nivell de protecció&lt;/i>&lt;/Label>',
+        text: '&lt;Label id="tree_AANP" style="font-size:8pt">&lt;i>(AANP) Areas naturales de especial interés de alto nivel de protección&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_AANP.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
       },
       {
         id: "1_2",
-        text: '&lt;Label style="font-size:8pt">&lt;i>(ANEI) Àrees naturals d`especial interès&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>(ANEI) Áreas naturales de especial interés&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_ANEI.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
       },
       {
         id: "1_3",
-        text: '&lt;Label style="font-size:8pt">&lt;i>(AIN-PG) Àrees d`interes natural per planejament general&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>((AIN-PG) Áreas de interés natural por planeamiento general&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_AIN.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
       },
       {
         id: "1_4",
-        text: '&lt;Label style="font-size:8pt">&lt;i>(ZIP) Zones de Interés pasajistic protegides per planejament general&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>(ZIP) Zonas de Interés pasajistico protegidas por planeamiento general&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_ZIP.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
       },
       {
         id: "1_5",
-        text: '&lt;Label style="font-size:8pt">&lt;i>(ARIP) Àrees rurals d`interès paisatgistic&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>(ARIP) Áreas rurales de interés paisajístico&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_ARIP.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
       },
       {
         id: "1_6",
-        text: '&lt;Label style="font-size:8pt">&lt;i>(SRG) Àrees de sòl rústic de regim general&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>(SRG) Áreas de suelo rústico de régimen general&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_SRG.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
       },
       {
         id: "1_7",
-        text: '&lt;Label style="font-size:8pt">&lt;i>(AIA) Àrees de interes agrari&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>(AIA) Áreas de interés agrario&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_AIA.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
       },
       {
         id: "1_8",
-        text: '&lt;Label style="font-size:8pt">&lt;i>(AT-H) Àrees de transició, d´harmonització &lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>(AT-H) Áreas de transición, de armonización &lt;/i>&lt;/Label>',
         icon: "images/legends/RV_AT-H.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
       },
       {
         id: "1_9",
-        text: '&lt;Label style="font-size:8pt">&lt;i>(NR) Nucli rural&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>(NR) Núcleo rural&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_NR.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
@@ -264,35 +293,35 @@ class TOC {
     const data = [
       {
         id: "2_1_18_1",
-        text: '&lt;Label style="font-size:8pt">&lt;i>(SLEC) Equipament Comunitari (S.Local)&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>(SLEC) Equipamiento Comunitario (S.Local)&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_SLEC.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
       },
       {
         id: "2_1_18_2",
-        text: '&lt;Label style="font-size:8pt">&lt;i>(SLEL) Espai Lliure (S.Local)&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>(SLEL) Espacio Libre (S.Local)&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_SLEL.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
       },
       {
         id: "2_1_18_3",
-        text: '&lt;Label style="font-size:8pt">&lt;i>(SLC) Comunicaciones e infraestructuras (S.Local)&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>(SLCI) Comunicaciones e infraestructuras (S.Local)&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_SGC.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
       },
       {
         id: "2_1_18_4",
-        text: '&lt;Label style="font-size:8pt">&lt;i>(SGEC) Equipament Comunitari (S.General)&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>(SGEC) Equipamiento Comunitario (S.General)&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_SGEC.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
       },
       {
         id: "2_1_18_5",
-        text: '&lt;Label style="font-size:8pt">&lt;i>(SGEL) Espai Lliure (S.General)&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>(SGEL) Espacio Libre (S.General)&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_SGEL.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
@@ -317,63 +346,63 @@ class TOC {
     const data = [
       {
         id: "2_1_1",
-        text: '&lt;Label style="font-size:8pt">&lt;i>(A) Residencial Plurifamiliar Eixample. AV-MC.V.&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>(A) Residencial Plurifamiliar Ensanche. AV-MC.V.&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_A.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
       },
       {
         id: "2_1_2",
-        text: '&lt;Label style="font-size:8pt">&lt;i>(B) Residencial Plurifamiliar Eixample Perifèric. AV-MC.V.&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>(B) Residencial Plurifamiliar Ensanche Periférico. AV-MC.V.&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_B.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
       },
       {
         id: "2_1_3",
-        text: '&lt;Label style="font-size:8pt">&lt;i>(C) Residencial Plurifamiliar Eixos Cívics. AV-MC.V.&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>(C) Residencial Plurifamiliar Ejes Cívicos. AV-MC.V.&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_C.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
       },
       {
         id: "2_1_4",
-        text: '&lt;Label style="font-size:8pt">&lt;i>(D) Residencial Plurifamiliar en illa tancada reculada. AV-MC.R.&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>(D) Residencial Plurifamiliar en manzana cerrada retranqueada. AV-MC.R.&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_D.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
       },
       {
         id: "2_1_5",
-        text: '&lt;Label style="font-size:8pt">&lt;i>(E) Residencial Plurifamiliar Ordenació Oberta. RP.A.&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>(E) Residencial Plurifamiliar Ordenación Abierta. RP.A.&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_E.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
       },
       {
         id: "2_1_6",
-        text: '&lt;Label style="font-size:8pt">&lt;i>(F) Ordenació volumètrica específica (residencial plurifamiliar o terciari. VE)&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>(F) Ordenación volumétrica específica (residencial plurifamiliar o terciario. VE)&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_F.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
       },
       {
         id: "2_1_7",
-        text: '&lt;Label style="font-size:8pt">&lt;i>(G) Residencial Plurifamiliar amb tipologies mixtes. RP. S.&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>(G) Residencial Plurifamiliar con tipologías mixtas. RP. S.&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_G.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
       },
       {
         id: "2_1_8",
-        text: '&lt;Label style="font-size:8pt">&lt;i>(H) Residencial Plurifamiliar MC reculada amb porxos. AV-MC.R.&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>(H) Residencial Plurifamiliar MC retranqueado con porches. AV-MC.R.&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_H.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
       },
       {
         id: "2_1_9",
-        text: '&lt;Label style="font-size:8pt">&lt;i>(I) Residencial Unifamiliar aïllada de baixa densitat. RP.A.&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>(I) Residencial Unifamiliar aislada de baja densidad. RP.A.&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_I.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
@@ -387,56 +416,56 @@ class TOC {
       },
       {
         id: "2_1_11",
-        text: '&lt;Label style="font-size:8pt">&lt;i>(K) Residencial Unifamiliar entre mitgeres. AV-MC.R.&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>(K) Residencial Unifamiliar entre medianeras. AV-MC.R.&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_K.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
       },
       {
         id: "2_1_12",
-        text: '&lt;Label style="font-size:8pt">&lt;i>(L) Industrial. Ús productiu en trama residencial. RP.A.&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>(L) Industrial. Uso productivo en trama residencial. RP.A.&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_L.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
       },
       {
         id: "2_1_13",
-        text: '&lt;Label style="font-size:8pt">&lt;i>(M) Industrial. Ús productiu en Polígons Industrials. RP.A.&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>(M) Industrial. Uso productivo en polígonos industriales. RP.A.&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_M.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
       },
       {
         id: "2_1_14",
-        text: '&lt;Label style="font-size:8pt">&lt;i>(N) Preservació ambiental N.&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>(N) Preservación ambiental N.&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_N.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
       },
       {
         id: "2_1_15",
-        text: '&lt;Label style="font-size:8pt">&lt;i>(R) Preservació arquitectònica ambiental R.&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>(R) Preservación arquitectónica ambiental R.&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_R.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
       },
       {
         id: "2_1_16",
-        text: '&lt;Label style="font-size:8pt">&lt;i>(S) Terciari en edificació aïllada (Comercial/Administratiu). RP.A.&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>(S) Terciario en edificación aislada (Comercial/Administrativo). RP.A.&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_S.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
       },
       {
         id: "2_1_17",
-        text: '&lt;Label style="font-size:8pt">&lt;i>(T) Turístic en edificació aïllada. RP.A.&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>(T) Turístico en edificación aislada. RP.A.&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_T.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
       },
       {
         id: "2_1_18",
-        text: "Sistemes dotacionals",
+        text: "Sistemas dotacionales",
         // 'data' : categorias_rustico,
         icon: "images/legends/RV_SISTEMAS.png",
         a_attr: { class: "no_checkbox" },
@@ -445,63 +474,63 @@ class TOC {
       },
       {
         id: "2_1_19",
-        text: '&lt;Label style="font-size:8pt">&lt;i>(EL0) Espai Lliure Privat&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>(EL0) Espacio Libre Privado&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_EL0.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
       },
       {
         id: "2_1_20",
-        text: '&lt;Label style="font-size:8pt">&lt;i>(CAT) Catalegs&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>(CAT) Catálogos&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_CAT.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
       },
       {
         id: "2_1_21",
-        text: '&lt;Label style="font-size:8pt">&lt;i>(r) Preservació&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>(r) Preservación&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_PRESERV_r.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
       },
       {
         id: "2_1_22",
-        text: '&lt;Label style="font-size:8pt">&lt;i>Carencia Infraestructura&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>Carencia de Infraestructuras&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_CARENCIA_IF.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
       },
       {
         id: "2_1_23",
-        text: '&lt;Label style="font-size:8pt">&lt;i>Pasatge&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>Pasaje&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_PASAJE.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
       },
       {
         id: "2_1_24",
-        text: '&lt;Label style="font-size:8pt">&lt;i>Nova Alineació&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>Nueva Alineación&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_NA.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
       },
       {
         id: "2_1_25",
-        text: '&lt;Label style="font-size:8pt">&lt;i>Profunditat edificable&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>Profundidad edificable&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_PROF_EDIF.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
       },
       {
         id: "2_1_26",
-        text: '&lt;Label style="font-size:8pt">&lt;i>Separació qualificació&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>Separación calificación&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_SEPARACION_CALIFIC.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
       },
       {
         id: "2_1_27",
-        text: '&lt;Label style="font-size:8pt">&lt;i>Separació alçada&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>Separación altura&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_SEPARACION_ALTURAS.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
@@ -522,7 +551,7 @@ class TOC {
       },
       {
         id: "2_2_9_2",
-        text: '&lt;Label style="font-size:8pt">&lt;i>(EL) Esppacios libres&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>(EL) Espacios libres&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_SLEL.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
@@ -549,7 +578,7 @@ class TOC {
       },
       {
         id: "2_2_3",
-        text: '&lt;Label style="font-size:8pt">&lt;i>(PRI_I) Vivienda Unifaliliar aislada&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>(PRI_I) Vivienda Unifamiliar aislada&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_PL_I.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
@@ -570,21 +599,21 @@ class TOC {
       },
       {
         id: "2_2_6",
-        text: '&lt;Label style="font-size:8pt">&lt;i>(S) Comercial / Srevicios&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>(PRI_S) Comercial / Servicios&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_PL_S.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
       },
       {
         id: "2_2_7",
-        text: '&lt;Label style="font-size:8pt">&lt;i>(T) Turístico&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>(PRI_T) Turístico&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_PL_T.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
       },
       {
         id: "2_2_8",
-        text: '&lt;Label style="font-size:8pt">&lt;i>(T) Turístico hotelero&lt;/i>&lt;/Label>',
+        text: '&lt;Label style="font-size:8pt">&lt;i>(PRI_TH) Turístico hotelero&lt;/i>&lt;/Label>',
         icon: "images/legends/RV_PL_TH.png",
         a_attr: { class: "no_checkbox" },
         state: { selected: false },
@@ -739,7 +768,7 @@ class TOC {
             id: 2,
             text: "Calificaciones",
             icon: "images/legends/RV_CALIF_SU.png",
-            state: { checked: true, disabled: false, opened: true },
+            state: { checked: true, disabled: false, opened: false },
             children: [
               {
                 id: "2_1",
@@ -777,11 +806,11 @@ class TOC {
             id: 3,
             text: "Ámbitos",
             icon: "images/legends/RV_SG_SR.png",
-            state: { checked: true, disabled: false, opened: true },
+            state: { checked: true, disabled: false, opened: false },
             children: [
               {
                 id: "3_1",
-                text: "PGOU98",
+                text: "Plan General 1998",
                 icon: "images/legends/carpeta_azul_16.png",
                 data: this.mapLayers
                   .getMapLayerByName("pgou98_ambitos")
@@ -791,7 +820,7 @@ class TOC {
               },
               {
                 id: "3_2",
-                text: "PRI",
+                text: "(PRI) Playa de Palma",
                 icon: "images/legends/carpeta_amarilla_16.png",
                 data: this.mapLayers
                   .getMapLayerByName("pri_ambitos")
@@ -801,7 +830,7 @@ class TOC {
               },
               {
                 id: "3_3",
-                text: "PG2023",
+                text: "Plan General 2023",
                 icon: "images/legends/carpeta_roja_16.png",
                 data: this.mapLayers
                   .getMapLayerByName("pg2023_ambitos")
@@ -810,6 +839,13 @@ class TOC {
                 children: this.createDataAmbitosPG2023(),
               },
             ],
+          },
+          {
+            id: 4,
+            text: "Ultimas aprobaciones iniciales",
+            icon: "fa-solid fa-file-signature",
+            data: this.mapLayers.getMapLayerByName("layerPA_ai").getLayer(),
+            state: { checked: true, disabled: false, opened: true },
           },
         ],
       },
@@ -848,7 +884,7 @@ class TOC {
         &lt;TABLE style='padding:3px;font-size:9px;font-family:Arial;color:#000000;width:100%;height:10px'  BORDER=0  bgcolor="#cfd7e7" BORDERCOLOR="grey" CELLPADDING=3 CELLSPACING=1>
         
             &lt;tr align="left" bgcolor="white" style='padding:0px;font-size:9.5px;font-family:Arial;color:#000000;height:20px'>
-                &lt;td style='width:90px'> &lt;LABEL  style='width:120px;padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>OPACITAT&lt;/label>&lt;/td>
+                &lt;td style='width:90px'> &lt;LABEL id='label_opacidad_ordenacion' style='width:120px;padding:3px;font-size:8pt;font-family:Arial;color:#000000;'>OPACIDAD&lt;/label>&lt;/td>
                 &lt;td>${this.htmSliderOrdenacion}&lt;/td>
             
             &lt;/tr> 
@@ -910,7 +946,10 @@ class TOC {
       }
 
       $("#jstree_ord").on("check_node.jstree", function (e, data) {
-        traverseOrdenacionCheck(data.node.id);
+        const currentZoom = self.map.getZoom();
+        if (currentZoom >= 14 &amp;&amp; currentZoom &lt;= 22 &amp;&amp; data.node.id == 4)
+          traverseOrdenacionCheck(data.node.id);
+        else if (data.node.id != 4) traverseOrdenacionCheck(data.node.id);
       });
 
       $("#jstree_ord").on("uncheck_node.jstree", function (e, data) {
@@ -1305,7 +1344,7 @@ class TOC {
         &lt;input type="radio" name="mapa_base" id="catastro" >        
         &lt;label for="catastro">Catastro (Oficina Virtual)&lt;/label>
         &lt;input type="radio" name="mapa_base" id="orto_actual" >        
-        &lt;label for="orto_actual">(PNOA) OrtoImage mas actual&lt;/label>
+        &lt;label for="orto_actual">(PNOA) OrtoImagen mas actual&lt;/label>
         &lt;input type="radio" name="mapa_base" id="sigpac">        
         &lt;label for="sigpac">SIGPAC (1997-2003)&lt;/label> 
         &lt;input type="radio" name="mapa_base" id="ib_2001" >        
@@ -1663,13 +1702,13 @@ class TOC {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Frontend.html">Frontend</a></li><li><a href="module-Router.html">Router</a></li></ul><h3>Namespaces</h3><ul><li><a href="SedipualbaController.html">SedipualbaController</a></li><li><a href="VisorController.html">VisorController</a></li></ul><h3>Classes</h3><ul><li><a href="module-Frontend.DataReader.html">DataReader</a></li><li><a href="module-Frontend.FeatureUrbanistic.html">FeatureUrbanistic</a></li><li><a href="module-Frontend.Form_CATALOGO_PGOU98.html">Form_CATALOGO_PGOU98</a></li><li><a href="module-Frontend.MapLayer.html">MapLayer</a></li><li><a href="module-Frontend.MapLayers.html">MapLayers</a></li><li><a href="module-Frontend.MapLayersVisor.html">MapLayersVisor</a></li><li><a href="module-Frontend.MapManager.html">MapManager</a></li><li><a href="module-Frontend.TOC.html">TOC</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Frontend.html">Frontend</a></li><li><a href="module-Router.html">Router</a></li></ul><h3>Namespaces</h3><ul><li><a href="SedipualbaController.html">SedipualbaController</a></li><li><a href="VisorController.html">VisorController</a></li></ul><h3>Classes</h3><ul><li><a href="module-Frontend.Asistente.html">Asistente</a></li><li><a href="module-Frontend.DataReader.html">DataReader</a></li><li><a href="module-Frontend.DataReaderSedipualb.html">DataReaderSedipualb</a></li><li><a href="module-Frontend.FeatureUrbanistic.html">FeatureUrbanistic</a></li><li><a href="module-Frontend.Form_CATALOGO_PGOU98.html">Form_CATALOGO_PGOU98</a></li><li><a href="module-Frontend.Form_PARAMETROS_CALIFICACIONES_PRI.html">Form_PARAMETROS_CALIFICACIONES_PRI</a></li><li><a href="module-Frontend.Form_PARAMETROS_EQ_PGOU98.html">Form_PARAMETROS_EQ_PGOU98</a></li><li><a href="module-Frontend.Form_PARAMETROS_RSD_PGOU98.html">Form_PARAMETROS_RSD_PGOU98</a></li><li><a href="module-Frontend.Form_PARAMETROS_SEC_PGOU98.html">Form_PARAMETROS_SEC_PGOU98</a></li><li><a href="module-Frontend.Form_PARAMETROS_TER_PGOU98.html">Form_PARAMETROS_TER_PGOU98</a></li><li><a href="module-Frontend.Form_PARAMETROS_VE_PGOU98.html">Form_PARAMETROS_VE_PGOU98</a></li><li><a href="module-Frontend.Form_SISTEMAS_PG2023.html">Form_SISTEMAS_PG2023</a></li><li><a href="module-Frontend.Form_SISTEMAS_PGOU98.html">Form_SISTEMAS_PGOU98</a></li><li><a href="module-Frontend.Form_SISTEMAS_PRI.html">Form_SISTEMAS_PRI</a></li><li><a href="module-Frontend.Form_UNIDAD_EJECUCION_PGOU98.html">Form_UNIDAD_EJECUCION_PGOU98</a></li><li><a href="module-Frontend.Form_UNIDAD_EJECUCION_PRI.html">Form_UNIDAD_EJECUCION_PRI</a></li><li><a href="module-Frontend.I18nHandler.html">I18nHandler</a></li><li><a href="module-Frontend.MapLayer.html">MapLayer</a></li><li><a href="module-Frontend.MapLayers.html">MapLayers</a></li><li><a href="module-Frontend.MapLayersVisor.html">MapLayersVisor</a></li><li><a href="module-Frontend.MapManager.html">MapManager</a></li><li><a href="module-Frontend.MapQuery.html">MapQuery</a></li><li><a href="module-Frontend.NormativaDialog.html">NormativaDialog</a></li><li><a href="module-Frontend.QueryDialog.html">QueryDialog</a></li><li><a href="module-Frontend.QueryDialogEXP.html">QueryDialogEXP</a></li><li><a href="module-Frontend.QueryDialogEXP_Planeamiento.html">QueryDialogEXP_Planeamiento</a></li><li><a href="module-Frontend.QueryDialogPG2023.html">QueryDialogPG2023</a></li><li><a href="module-Frontend.QueryDialogPGOU98.html">QueryDialogPGOU98</a></li><li><a href="module-Frontend.QueryDialogPRI.html">QueryDialogPRI</a></li><li><a href="module-Frontend.SIGDUMap.html">SIGDUMap</a></li><li><a href="module-Frontend.Sedipualb.html">Sedipualb</a></li><li><a href="module-Frontend.TOC.html">TOC</a></li></ul><h3>Global</h3><ul><li><a href="global.html#mainApp">mainApp</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a> on Sun Nov 26 2023 09:11:52 GMT+0100 (hora estándar de Europa central)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a> on Sat Dec 16 2023 19:01:33 GMT+0100 (hora estándar de Europa central)
 </footer>
 
 <script> prettyPrint(); </script>
